@@ -27,4 +27,5 @@ let package = Package(
         .target(
             name: "CloudKitMagicCRUD",
             dependencies: [])
+	]
 )
