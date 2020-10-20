@@ -12,6 +12,12 @@ extension CKRecord {
 	open var asDictionary:[String:Any] {
 		var result:[String:Any] = [:]
 		result["recordName"] = self.recordID.recordName
+		result["createdBy"] = self.creatorUserRecordID?.recordName
+		result["createdAt"] = self.creationDate
+		result["modifiedBy"] = self.lastModifiedUserRecordID?.recordName
+		result["modifiedAt"] = self.modificationDate
+		result["changeTag"] = self.recordChangeTag
+
 		
 		for key in self.allKeys() {
 			
