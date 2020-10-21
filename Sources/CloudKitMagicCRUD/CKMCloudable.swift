@@ -120,7 +120,12 @@ extension CKMCloudable {
 			
 			//MARK: Tratamento de todos os tipos possíveis
 			
-			if field.label?.elementsEqual("recordName") ?? false {
+			if field.label?.elementsEqual("recordName") ?? false
+				|| field.label?.elementsEqual("createdBy") ?? false
+				|| field.label?.elementsEqual("createdAt") ?? false
+				|| field.label?.elementsEqual("modifiedBy") ?? false
+				|| field.label?.elementsEqual("modifiedAt") ?? false
+				|| field.label?.elementsEqual("changeTag") ?? false {
 				// do nothing
 			}
 			
@@ -275,7 +280,7 @@ extension CKMCloudable {
 		// try get from cache
 		if let record = CKMDefault.getFromCache(recordName) {
 			do {
-//				let result:Self = try Self.ckLoad(from: record)
+				//				let result:Self = try Self.ckLoad(from: record)
 				let result:Self = try Self.load(from: record.asDictionary)
 				completion(.success(result))
 			} catch {
