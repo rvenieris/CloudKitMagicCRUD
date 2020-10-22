@@ -11,18 +11,14 @@ import CloudKit
 import UserNotifications
 
 open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
-	private(set) var started = false
 	open var observers:[CKRecord.RecordType:NSPointerArray] = [:]
+	public static var shared = CKMNotificationManager()
 	
 	
-	public override init() {
+	private override init() {
 		super.init()
 		self.resgisterInNotificationCenter()
-	}
-	
-	open func start(){
 		debugPrint("CKNotificationManager started")
-		started = true
 	}
 	
 	open func resgisterInNotificationCenter() {
@@ -30,39 +26,39 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound], completionHandler: { authorized, error in
 			if authorized {
 				DispatchQueue.main.async {
-//					let app = UIApplication.shared.delegate as! AppDelegate
-					 UIApplication.shared.registerForRemoteNotifications()
+					//					let app = UIApplication.shared.delegate as! AppDelegate
+					UIApplication.shared.registerForRemoteNotifications()
 				}
 				
 			}
 		})
 	}
 	
-//	func createNotification<T:CKCloudable>(to recordObserver:CKMRecordObserver,
-//										   for recordType:T.Type,
-//										   adding subscription:CKQuerySubscription,
-//										   with notificationInfo:CKSubscription.NotificationInfo) {
-//		let subscription = CKQuerySubscription(recordType: recordType.ckRecordType, predicate: predicate, options:options)
-//		subscription.notificationInfo = info
-//		
-//		self.add(observer: recordObserver, to: recordType.ckRecordType)
-//		//TODO: Pegar as subscriptions que já existe e só adicionar se necessário
-//		CKDefault.database.save(subscription, completionHandler: { subscription, error in
-//			if error == nil {
-//				// Subscription saved successfully
-//				print("subscribed")
-//			} else {
-//				// An error occurred
-//				print("error in subscription", error ?? "no error")
-//			}
-//		})
-//}
+	//	func createNotification<T:CKCloudable>(to recordObserver:CKMRecordObserver,
+	//										   for recordType:T.Type,
+	//										   adding subscription:CKQuerySubscription,
+	//										   with notificationInfo:CKSubscription.NotificationInfo) {
+	//		let subscription = CKQuerySubscription(recordType: recordType.ckRecordType, predicate: predicate, options:options)
+	//		subscription.notificationInfo = info
+	//
+	//		self.add(observer: recordObserver, to: recordType.ckRecordType)
+	//		//TODO: Pegar as subscriptions que já existe e só adicionar se necessário
+	//		CKDefault.database.save(subscription, completionHandler: { subscription, error in
+	//			if error == nil {
+	//				// Subscription saved successfully
+	//				print("subscribed")
+	//			} else {
+	//				// An error occurred
+	//				print("error in subscription", error ?? "no error")
+	//			}
+	//		})
+	//}
 	
 	open func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
-										   for recordType:T.Type,
-										   options:CKQuerySubscription.Options? = nil,
-										   predicate: NSPredicate? = nil,
-										   alertBody:String? = nil) {
+												 for recordType:T.Type,
+												 options:CKQuerySubscription.Options? = nil,
+												 predicate: NSPredicate? = nil,
+												 alertBody:String? = nil) {
 		UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
 		UIApplication.shared.applicationIconBadgeNumber = 0
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
@@ -98,7 +94,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	}
 	
 	open func notifyObserversFor(_ notification: UNNotification) {
-		print(notification.request.content.categoryIdentifier)
 		let recordTypeName = notification.request.content.categoryIdentifier
 		self.observers.forEach {$0.value.compact()}
 		let interestedObservers = observers.filter {$0.key == recordTypeName}
@@ -109,22 +104,19 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		}
 	}
 	
-	
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
 		completionHandler([]) //.alert, .sound, .badge
-		print(#function)
-		print(notification.debugDescription)
 		notifyObserversFor(notification)
-//		completionHandler(UNNotificationPresentationOptions.badge)
+		//		completionHandler(UNNotificationPresentationOptions.badge)
 	}
 	
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
-		print(#function)
+		debugPrint(#function)
 	}
 	
 	
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-		print(#function)
+		debugPrint(#function)
 	}
-
+	
 }

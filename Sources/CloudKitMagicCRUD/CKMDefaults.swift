@@ -31,7 +31,7 @@ open class CKMDefault {
 		return container.publicCloudDatabase
 	}()
 	
-	public static var notificationManager:CKMNotificationManager! = CKMNotificationManager()
+	public static var notificationManager:CKMNotificationManager! = CKMNotificationManager.shared
 	
 	public struct CacheItem {
 		let record: CKRecord
@@ -47,11 +47,11 @@ open class CKMDefault {
 	/// Time in seconds for cache expiration
 	private static var cacheExpirationTime:TimeInterval = {
 		#if DEBUG
-			return .infinity
+		return .infinity
 		#else
-			return 30
+		return 30
 		#endif
-
+		
 	}()
 	
 	public static func addToCache(_ record:CKRecord) {
@@ -60,7 +60,7 @@ open class CKMDefault {
 		
 		Self.cache[record.recordID.recordName] = CacheItem(record: record, addedAt: Date())
 	}
-
+	
 	public static func removeFromCache(_ recordName:String) {
 		Self.cache[recordName] = nil
 	}
@@ -68,10 +68,10 @@ open class CKMDefault {
 	public static func addToCache(_ records:[CKRecord]) {
 		records.forEach { Self.addToCache($0) }
 	}
-
-					/// Manage if Type is Cacheable
+	
+	/// Manage if Type is Cacheable
 	private static var typeIsCacheable:[String:Bool] = [:]
-
+	
 	public static func get<T>(isCacheable type:T.Type)->Bool {
 		return typeIsCacheable[getRecordTypeFor(type:type)] ?? true
 	}
@@ -82,7 +82,7 @@ open class CKMDefault {
 	
 	public static func getFromCache(_ recordName: String)->CKRecord? {
 		if let item = Self.cache[recordName],
-			item.addedAt.timeIntervalSinceNow < cacheExpirationTime {
+		   item.addedAt.timeIntervalSinceNow < cacheExpirationTime {
 			return item.record
 		} else {
 			Self.removeFromCache(recordName)
@@ -102,16 +102,16 @@ open class CKMDefault {
 	public static func getRecordTypeFor<T:CKMRecord>(_ object:T)->String {
 		return Self.getRecordTypeFor(type: T.Type.self)
 	}
-
+	
 	public static func getRecordTypeFor<T>(type:T.Type)->String {
 		let name = String(describing: type)
 		return typeRecordName[name] ?? name
 	}
-
+	
 	public static func setRecordTypeFor<T:CKMRecord>(_ object:T, recordName:String) {
 		Self.setRecordTypeFor(type: T.Type.self, recordName: recordName)
 	}
-
+	
 	public static func setRecordTypeFor<T>(type:T.Type, recordName:String) {
 		let name = String(describing: type)
 		typeRecordName[name] = recordName
@@ -126,5 +126,5 @@ open class CKMDefault {
 		
 		return true
 	}
-
+	
 }
