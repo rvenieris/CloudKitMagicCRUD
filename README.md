@@ -9,7 +9,7 @@
 2. Select or Create a Container for the project
 3. Be sure that you Container exists in your iCloud visiting  [https://icloud.developer.apple.com/dashboard/](https://icloud.developer.apple.com/dashboard/)
 3. In AppDelegate, didFinishLaunchingWithOptions function add a line setting your container if needed as
-> CKMDefault.containerIdentifyer = "iCloud.My.CloudContainer"
+> CKMDefault.containerIdentifier = "iCloud.My.CloudContainer"
 >
 >  *If needed you can also start the notification Manager here*
 >

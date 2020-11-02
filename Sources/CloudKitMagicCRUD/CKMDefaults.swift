@@ -15,7 +15,7 @@ open class CKMDefault {
 	By dafault get the CKContainer.default().publicCloudDatabase value.
 	Can be resseted to another value
 	*/
-	public static var containerIdentifyer:String {
+	public static var containerIdentifier:String {
 		get {
 			return container.containerIdentifier ?? "*** no containner ***"
 		}
