@@ -22,14 +22,16 @@
 
 
 CKMRecord has a mandatory field and sobe optional fields
--- Mandatory
-recordName:String? -> When it's a saved record, contains the record ID
--- Optionals
-createdBy:String -> Contains creator RecordName
-createdAt:Date -> Conntains creation Date
-modifiedBy:String -> Contains last modifier RecordName
-modifiedAt:Date -> Conntainslast modificatio Date
-changeTag:String -> a tag that changes at each modification
+
+* Mandatory
+  * recordName:String? -> When it's a saved record, contains the record ID
+
+* Optionals
+  * createdBy:String -> Contains creator RecordName
+  * createdAt:Date -> Conntains creation Date
+  * modifiedBy:String -> Contains last modifier RecordName
+  * modifiedAt:Date -> Conntainslast modificatio Date
+  * changeTag:String -> a tag that changes at each modification
 
 
 
@@ -130,10 +132,10 @@ typealias CKSortDescriptor = NSString
 ```swift
 class CKMNotificationManager {
 	func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
-											for recordType:T.Type,
-											options:CKQuerySubscription.Options?,
-											predicate: NSPredicate?,
-											alertBody:String?)
+						for recordType:T.Type,
+						options:CKQuerySubscription.Options?,
+						predicate: NSPredicate?,
+						alertBody:String?)
 	
 }
 ```
