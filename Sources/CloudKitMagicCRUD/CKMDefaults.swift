@@ -25,6 +25,10 @@ open class CKMDefault {
 		}
 	}
 	
+	/**
+	The default container
+	Same as CKContainer.default()
+	*/
 	public static var container = CKContainer.default()
 	
 	public static var database:CKDatabase  = {

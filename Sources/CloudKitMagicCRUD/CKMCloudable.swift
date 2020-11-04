@@ -18,6 +18,10 @@ extension CKMCloudable {
 	public static var isClassType:Bool {return (Self.self is AnyClass)}
 	public var isClassType:Bool {return Self.isClassType}
 	
+	/**
+	Get or set the recordType name
+	the default value is the type (class or struct) name
+	*/
 	public static var ckRecordType: String {
 		get { CKMDefault.getRecordTypeFor(type: Self.self) }
 		set { CKMDefault.setRecordTypeFor(type: Self.self, recordName: newValue) }
@@ -193,7 +197,12 @@ extension CKMCloudable {
 		return preparedRecord
 	}
 	
-	/// Save the Object in iCloud returning the New Saved Object or Error
+	/**
+	Saves the object in iCloud, returning in a completion a Result Type
+		Cases:
+			.success(let record:CKMRecord) -> The saved record, with correct Object Type, in a Any shell.  Just cast this to it's original type.
+			.failure(let error) an error
+	*/
 	public func ckSave(then completion:@escaping (Result<Any, Error>)->Void) {
 		var ckPreparedRecord:CKMPreparedRecord
 		do {
@@ -273,6 +282,12 @@ extension CKMCloudable {
 		
 	}
 	
+	/**
+	Read all records from a type
+	- Parameters:
+	- recordName an iCloud recordName id for fetch
+	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
+	*/
 	public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void) {
 		
 		// Executar o fetch
