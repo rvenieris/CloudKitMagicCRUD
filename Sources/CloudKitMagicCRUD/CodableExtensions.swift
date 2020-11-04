@@ -29,18 +29,18 @@ extension Encodable {
 		[JSONSerialization.ReadingOptions.allowFragments, JSONSerialization.ReadingOptions.mutableContainers, JSONSerialization.ReadingOptions.mutableLeaves]
 	}
 	
-	var asString:String? {
+	public var asString:String? {
 		return self.jsonData?.toText
 	}
 	
-	var jsonData:Data? {
+	public var jsonData:Data? {
 		do {
 			return try JSONEncoder().encode(self)
 		} catch {}
 		return nil
 	}
 	
-	var asDictionary:[String: Any]? {
+	public var asDictionary:[String: Any]? {
 		if let data = self as? Data { return data.toDictionary as? [String: Any] } // is type IS Data.type, properly convert
 		
 		guard let json:Data  = self.jsonData,
@@ -62,7 +62,7 @@ extension Encodable {
 		return nil
 	}
 	
-	var asArray:[Any]? {
+	public var asArray:[Any]? {
 		do {
 			return try JSONSerialization.jsonObject(with: JSONEncoder().encode(self), options:jSONSerializationDefaultReadingOptions) as? [Any]
 		} catch {
@@ -71,7 +71,7 @@ extension Encodable {
 		return nil
 	}
 	
-	func save(in file:String? = nil)throws {
+	public func save(in file:String? = nil)throws {
 		// generates URL for documentDir/file.json
 		let documentDir = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
 		let fileName = file ?? String(describing: type(of: self))
@@ -79,7 +79,7 @@ extension Encodable {
 		try self.save(in: url)
 	}
 	
-	func save(in url:URL) throws {
+	public func save(in url:URL) throws {
 		// Try to save
 		do {
 			try JSONEncoder().encode(self).write(to: url)
@@ -94,32 +94,32 @@ extension Encodable {
 extension Decodable {
 	
 	/// Mutating Loads
-	mutating func load(from data:Data) throws {
+	public mutating func load(from data:Data) throws {
 		self = try Self.load(from: data)
 	}
 	
-	mutating func load(from url:URL) throws {
+	public mutating func load(from url:URL) throws {
 		self = try Self.load(from: url)
 	}
 	
-	mutating func load(from file:String? = nil) throws {
+	public mutating func load(from file:String? = nil) throws {
 		self = try Self.load(from: file)
 	}
 	
-	mutating func load(fromStringData stringData:String) throws {
+	public mutating func load(fromStringData stringData:String) throws {
 		self = try Self.load(from: stringData)
 	}
 	
-	mutating func load(from dictionary:[String:Any]) throws {
+	public mutating func load(from dictionary:[String:Any]) throws {
 		try self = Self.load(from: dictionary)
 	}
 	
-	mutating func load(from array:[Any]) throws {
+	public mutating func load(from array:[Any]) throws {
 		try self = Self.load(from: array)
 	}
 	
 	/// Static Loads
-	static func load(from data:Data)throws ->Self {
+	public static func load(from data:Data)throws ->Self {
 		// Try to read
 		do {
 			return try JSONDecoder().decode(Self.self, from: data)
@@ -129,7 +129,7 @@ extension Decodable {
 		}
 	}
 	
-	static func load(from url:URL) throws  ->Self {
+	public static func load(from url:URL) throws  ->Self {
 		// Try to read
 		do {
 			let data = try Data(contentsOf: url)
@@ -140,11 +140,11 @@ extension Decodable {
 		}
 	}
 	
-	static func load(from file:String? = nil)throws ->Self {
+	public static func load(from file:String? = nil)throws ->Self {
 		return try Self.load(from: Self.url(from: file))
 	}
 	
-	static func load(fromString stringData:String)throws ->Self{
+	public static func load(fromString stringData:String)throws ->Self{
 		guard let data = stringData.data(using: .utf8) else {
 			os_log("Can not read from %@", type:.error, stringData)
 			throw FileManageError.canNotConvertData
@@ -157,7 +157,7 @@ extension Decodable {
 		}
 	}
 	
-	static func load(from dictionary:[String:Any])throws ->Self{
+	public static func load(from dictionary:[String:Any])throws ->Self{
 		do {
 			guard let data:Data =
 				(dictionary[String(describing: self)] as? [Any])?.asData ?? // if data is Array, or
@@ -170,7 +170,7 @@ extension Decodable {
 		}
 	}
 	
-	static func load(from array:[Any])throws ->Self{
+	public static func load(from array:[Any])throws ->Self{
 		do {
 			guard let data = array.asData else { throw FileManageError.canNotConvertData }
 			return try Self.load(from: data)
@@ -180,7 +180,7 @@ extension Decodable {
 		}
 	}
 	
-	static private func url(from file:String? = nil)->URL {
+	public static func url(from file:String? = nil)->URL {
 		// generates URL for documentDir/file.json
 		if let fileName = file {
 			if fileName.lowercased().hasPrefix("http") {
@@ -241,21 +241,21 @@ extension Data {
 }
 
 extension URL {
-	var contentAsData:Data? {
+	public var contentAsData:Data? {
 		return try? Data(contentsOf: self)
 	}
 }
 
 
 extension Array {
-	var asData:Data? {
+	public var asData:Data? {
 		guard let array = CertifiedCodableData(["Array":self]).dictionary["Array"] else {return nil}
 		return try? JSONSerialization.data(withJSONObject: array, options: [])
 	}
 }
 
 extension Dictionary where Key == String {
-	var asData:Data? {
+	public var asData:Data? {
 		let dic = CertifiedCodableData(self).dictionary
 		return try? JSONSerialization.data(withJSONObject: dic, options: [])
 	}
@@ -275,7 +275,7 @@ public struct CertifiedCodableData:Codable {
 	private var dataArray:[String:[Data]] = [:]
 	private var customArray:[String:[CertifiedCodableData]] = [:]
 	
-	var dictionary:[String:Any] {
+	public var dictionary:[String:Any] {
 		var dic:[String:Any] = [:]
 		string.forEach{dic[$0.key] = $0.value}
 		number.forEach{dic[$0.key] = $0.value}

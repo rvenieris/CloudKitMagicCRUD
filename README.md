@@ -33,3 +33,15 @@ modifiedBy:String -> Contains last modifier RecordName
 modifiedAt:Date -> Conntainslast modificatio Date
 changeTag:String -> a tag that changes at each modification
 
+
+
+
+## List of Functions and capabilities
+
+
+## Another capabilities
+
+As this packages uses my also created CodableExtensions package, the follow functions and variables are also avaliable.
+
+### From CodableExtensions
+
