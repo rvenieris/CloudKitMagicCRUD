@@ -34,10 +34,147 @@ changeTag:String -> a tag that changes at each modification
 
 
 
-## List of Functions and capabilities
+## List main of Functions and capabilities
+These are the main functionalities of this package
+```swift
 
+class CKMDefault { 
+	/**
+	The default database
+	By dafault get the CKContainer.default().publicCloudDatabase value.
+	Can be resseted to another value
+	*/
+	static var containerIdentifier:String { get set }
+	
+	/**
+	The Notification Manager unique shared instance
+	*/
+	static var notificationManager:CKMNotificationManager  { get }
+}
+```
+
+```swift
+protocol CKMRecord {
+	/// recordName is the unique iCloud object identifyer
+	var recordName:String? { get set }
+	
+	/// optional iCloud record system data
+	var createdBy:String? { get }
+	var createdAt:Date? { get }
+	var modifiedBy:String? { get }
+	var modifiedAt:Date? { get }
+	var changeTag:String? { get }
+
+	/// Basic Record Managment
+	
+	/**
+		Get or set the recordType name
+		the default value is the type (class or struct) name
+	*/
+	static var ckRecordType: String { get set }
+	
+	/**
+	Saves the object in iCloud, returning in a completion a Result Type
+		Cases:
+			.success(let record:CKMRecord) -> The saved record, with correct Object Type, in a Any shell.  Just cast this to it's original type.
+			.failure(let error) an error
+	*/
+	func ckSave(then completion:@escaping (Result<Any, Error>)->Void)
+	
+	/**
+	Read all records from a type
+	- Parameters:
+	- sortedBy a array of  SortDescriptors (or string array)
+	- predicate a NSPredicate with some query  restrictions
+	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
+	*/
+	static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor],
+						  predicate:NSPredicate,
+						  then completion:@escaping (Result<Any, Error>)->Void)
+	
+	
+	/**
+	Read all records from a type
+	- Parameters:
+	- recordName an iCloud recordName id for fetch
+	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
+	*/
+	static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void)
+	
+	/**
+	Deletes an object in iCloud
+	The object must have a valid recordName
+	- returns: a (Result<String, Error>)
+	*/
+	func ckDelete(then completion:@escaping (Result<String, Error>)->Void)
+
+}
+```
+
+```swift
+/// Protocol for CK Notification Observers be warned when some register changed
+protocol CKMRecordObserver {
+	func onChange(ckRecordtypeName:String)
+}
+```
+
+```swift
+/**
+- Description
+A String that have "⇩" as last character if it's SortDescriptor is descending
+set the descriptos as descending using (ckSort.descending)
+*/
+typealias CKSortDescriptor = NSString
+```
+
+```swift
+class CKMNotificationManager {
+	func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
+											for recordType:T.Type,
+											options:CKQuerySubscription.Options?,
+											predicate: NSPredicate?,
+											alertBody:String?)
+	
+}
+```
 
 ## Another capabilities
+
+### List support of Functions and capabilities
+Here are other functionalities of this package that you may need
+```swift
+class CKMDefault {
+	/**
+	The default container
+	Same as CKContainer.default()
+	*/
+	static var container:CKContainer { get }
+	
+	static var database:CKDatabase { get set }
+	
+	/// The default semaphore for awaiting subqueries
+	static var semaphore:DispatchObject { get }
+		
+	/** Time in seconds for cache expiration
+		setted to 30s
+	*/
+	
+	/// Naming Types to RecordType
+	static func setRecordTypeFor<T:CKMRecord>(_ object:T, recordName:String)
+	static func getRecordTypeFor<T:CKMRecord>(_ object:T)->String
+	
+}
+
+```
+
+```swift
+protocol CKMRecord {
+	/// Converts a CloudKit.CKRecord in an object
+	static func load(from record:CKRecord)throws->Self
+}
+```
+
+
 
 As this packages uses my also created CodableExtensions package, the follow functions and variables are also avaliable.
 
