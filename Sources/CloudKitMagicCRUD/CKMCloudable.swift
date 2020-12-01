@@ -361,7 +361,7 @@ extension CKMCloudable {
 	}
 	
     
-    mutating func reloadIgnoringFail(completion: ()->Void) {
+    public mutating func reloadIgnoringFail(completion: ()->Void) {
         guard let recordName = self.recordName else { return }
         DispatchQueue.global().sync {
             var result:Self = self
@@ -383,7 +383,7 @@ extension CKMCloudable {
         }
     }
     
-    mutating func refresh(completion: ()->Void) {
+    public mutating func refresh(completion: ()->Void) {
         CKMDefault.removeFromCache(self.recordName ?? "_")
         self.reloadIgnoringFail(completion: completion)
     }
