@@ -6,7 +6,7 @@
 //  Copyright © 2018 LES.PUC-RIO. All rights reserved.
 //
 
-import CloudKit // For decode CKAsset as a valid Data type convertible to otiginal asset type
+import CloudKit // For decode CKAsset as a valid Data type convertible to original asset type
 import os.log
 
 public enum FileManageError:Error {
@@ -44,9 +44,9 @@ extension Encodable {
 		if let data = self as? Data { return data.toDictionary as? [String: Any] } // is type IS Data.type, properly convert
 		
 		guard let json:Data  = self.jsonData,
-			let jsonObject = try? JSONSerialization.jsonObject(with: json, options: jSONSerializationDefaultReadingOptions) else {
-				os_log("Cannot Decode %@ type as Dictionary", type:.error, String(describing: type(of:self)))
-				return nil
+			  let jsonObject = try? JSONSerialization.jsonObject(with: json, options: jSONSerializationDefaultReadingOptions) else {
+			os_log("Cannot Decode %@ type as Dictionary", type:.error, String(describing: type(of:self)))
+			return nil
 		}
 		// if jsonObject is OK
 		if let dic = jsonObject as? [String: Any] {
@@ -160,9 +160,9 @@ extension Decodable {
 	public static func load(from dictionary:[String:Any])throws ->Self{
 		do {
 			guard let data:Data =
-				(dictionary[String(describing: self)] as? [Any])?.asData ?? // if data is Array, or
+					(dictionary[String(describing: self)] as? [Any])?.asData ?? // if data is Array, or
 					dictionary.asData // if data is Dictionary
-				else { throw FileManageError.canNotConvertData } // else throw error to catch
+			else { throw FileManageError.canNotConvertData } // else throw error to catch
 			return try Self.load(from: data)
 		} catch let error {
 			os_log("Can not convert from dictionary to %@", type:.error, String(describing: Self.self))
@@ -288,7 +288,7 @@ public struct CertifiedCodableData:Codable {
 		dateArray.forEach{dic[$0.key] = $0.value.map{$0.timeIntervalSinceReferenceDate}}
 		dataArray.forEach{dic[$0.key] = $0.value.map{$0.base64EncodedString()}}
 		customArray.forEach{dic[$0.key] = $0.value.map{$0.dictionary}}
-
+		
 		return dic
 	}
 	
@@ -300,20 +300,20 @@ public struct CertifiedCodableData:Codable {
 			else if let dado = item.value as? Double 		 { number	  [item.key] = dado}
 			else if let dado = item.value as? Date   		 { date		  [item.key] = dado}
 			else if let dado = item.value as? Data   		 { data	      [item.key] = dado}
-				
+			
 			else if let dado = item.value as? [String 		] { stringArray[item.key] = dado}
 			else if let dado = item.value as? [Double 		] { numberArray[item.key] = dado}
 			else if let dado = item.value as? [Date   		] { dateArray  [item.key] = dado}
 			else if let dado = item.value as? [Data   	  	] { dataArray  [item.key] = dado}
-				
+			
 			else if let dado = item.value as? CKAsset   { data[item.key] = dado.fileURL?.contentAsData}
 			else if let dado = item.value as? [CKAsset] { dataArray[item.key] = dado.compactMap{$0.fileURL?.contentAsData} }
-				
+			
 			else if let dado = item.value as? [String:Any]   { custom	  [item.key] = CertifiedCodableData(dado)}
 			else if let dado = item.value as? [[String:Any]] { customArray[item.key] = dado.map{CertifiedCodableData($0)} }
-
+			
 			else if let _ = item.value as? [Any 		] { stringArray[item.key] = []}
-
+			
 			else { debugPrint("Unknown Type in originalData: \(item.key) = \(item.value)") }
 		}
 	}

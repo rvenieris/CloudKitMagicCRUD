@@ -360,6 +360,34 @@ extension CKMCloudable {
 		return result
 	}
 	
+    
+    mutating func reloadIgnoringFail(completion: ()->Void) {
+        guard let recordName = self.recordName else { return }
+        DispatchQueue.global().sync {
+            var result:Self = self
+            CKMDefault.database.fetch(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (record, error) -> Void in
+
+                // else
+                if let record = record {
+                    do {
+                        CKMDefault.addToCache(record)
+                        result = try Self.load(from: record)
+                        CKMDefault.semaphore.signal()
+                    } catch {}
+                }
+
+            })
+            CKMDefault.semaphore.wait()
+            self = result
+            completion()
+        }
+    }
+    
+    mutating func refresh(completion: ()->Void) {
+        CKMDefault.removeFromCache(self.recordName ?? "_")
+        self.reloadIgnoringFail(completion: completion)
+    }
+
 }
 
 /// Notification Managment
