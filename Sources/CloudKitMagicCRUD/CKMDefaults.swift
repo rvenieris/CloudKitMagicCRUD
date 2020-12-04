@@ -65,9 +65,23 @@ open class CKMDefault {
 		Self.cache[record.recordID.recordName] = CacheItem(record: record, addedAt: Date())
 	}
 	
-	public static func removeFromCache(_ recordName:String) {
-		Self.cache[recordName] = nil
-	}
+    public static func removeFromCache(_ recordName:String) {
+        Self.cache[recordName] = nil
+    }
+    
+    public static func removeFromCacheCascade(_ recordName:String) {
+        guard let record = Self.cache[recordName] else {return}
+        
+        for item in record.record.allKeys() {
+            guard let value = (record.record.value(forKey: item) as? CKRecord.Reference) else { continue }
+            removeFromCacheCascade(value.recordID.recordName)
+        }
+        Self.cache[recordName] = nil
+    }
+
+    
+
+    
 	
 	public static func addToCache(_ records:[CKRecord]) {
 		records.forEach { Self.addToCache($0) }

@@ -384,7 +384,7 @@ extension CKMCloudable {
     }
     
     public mutating func refresh(completion: ()->Void) {
-        CKMDefault.removeFromCache(self.recordName ?? "_")
+        CKMDefault.removeFromCacheCascade(self.recordName ?? "_")
         self.reloadIgnoringFail(completion: completion)
     }
 
