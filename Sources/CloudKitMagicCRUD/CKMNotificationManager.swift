@@ -58,9 +58,11 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 												 for recordType:T.Type,
 												 options:CKQuerySubscription.Options? = nil,
 												 predicate: NSPredicate? = nil,
-												 alertBody:String? = nil) {
+												 alertBody:String? = nil,
+                                                 completion: @escaping (Result<CKSubscription, Error>)->Void ) {
+    
 		UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-		UIApplication.shared.applicationIconBadgeNumber = 0
+//		UIApplication.shared.applicationIconBadgeNumber = 0
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
 		let predicate = predicate ?? NSPredicate(value: true)
 		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
@@ -74,20 +76,34 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		
 		let subscription = CKQuerySubscription(recordType: recordType.ckRecordType, predicate: predicate, options:options)
 		subscription.notificationInfo = info
+        
 		
 		self.add(observer: recordObserver, to: recordType.ckRecordType)
 		//TODO: Pegar as subscriptions que já existe e só adicionar se necessário
 		CKMDefault.database.save(subscription, completionHandler: { subscription, error in
-			if error == nil {
-				// Subscription saved successfully
-				print("subscribed")
-			} else {
-				// An error occurred
-				print("error in subscription", error ?? "no error")
+            if let subscription = subscription {
+                // Subscription saved successfully
+                completion(.success(subscription))
+                debugPrint("subscribed")
+            }
+            else if let error = error {
+                // An error occurred
+                completion(.failure(error))
+                debugPrint("error in subscription", error)
 			}
 		})
 	}
-	
+    
+    open func deleteSubscription(with id:CKSubscription.ID, then completion:@escaping (Result<String, Error>)->Void) {
+            CKMDefault.database.delete(withSubscriptionID: id, completionHandler: { message, error in
+                if let message = message {
+                    completion(.success(message))
+                }
+                else if let error = error {
+                    completion(.failure(error))
+                }
+        })
+    }
 	private func add(observer:CKMRecordObserver, to identifier:String) {
 		self.observers[identifier] = self.observers[identifier] ?? NSPointerArray.strongObjects()
 		self.observers[identifier]?.addObject(observer as AnyObject)
@@ -95,11 +111,12 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	
 	open func notifyObserversFor(_ notification: UNNotification) {
 		let recordTypeName = notification.request.content.categoryIdentifier
+        
 		self.observers.forEach {$0.value.compact()}
 		let interestedObservers = observers.filter {$0.key == recordTypeName}
 		for observers in interestedObservers {
 			for observer in observers.value.allObjects {
-				(observer as? CKMRecordObserver)?.onChange(ckRecordtypeName: recordTypeName)
+                (observer as? CKMRecordObserver)?.onReceive(notification: CKMNotification(from: notification))
 			}
 		}
 	}
@@ -119,4 +136,67 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		debugPrint(#function)
 	}
 	
+}
+
+
+
+/**
+ A simplified UNNotification data
+ 
+ - Parameter:
+    - categoty: Date - The category of the notification, usualy a class name.
+    - recordID:String? - The RecordID of the record that triggers the notification
+    - subscriptionID:String? - The ID of subscription trigged
+    - zoneID:String? - The zoneID of the pubscription that triggers notification
+    - userID:String? - The user that make the changes
+    - date: Date - The delivery date of the notification.
+    - identifier:String : The unique identifier for this notification request.
+    - title: String - A short description of the reason for the alert.
+    -  subtitle: String - A secondary description of the reason for the alert.
+    -  body: String - The message displayed in the notification alert.
+    -  badge: NSNumber? - The number to display as the app’s icon badge.
+    -  sound: UNNotificationSound? - The sound to play when the notification is delivered.
+    -  launchImageName: String - The name of the launch image to display when your app is launched in response to the notification
+ */
+open class CKMNotification {
+    
+    public let category: String
+    public let recordID:String?
+    public let subscriptionID:String?
+    public let zoneID:String?
+    public let userID:String?
+    public let date:Date
+    public let identifier: String
+    public let title: String
+    public let subtitle: String
+    public let body: String
+    public let badge: NSNumber?
+    public let sound: UNNotificationSound?
+    public let launchImageName: String
+//     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
+//    public let userInfo: [AnyHashable : Any]
+    
+    public init(from notification: UNNotification) {
+        self.category = notification.request.content.categoryIdentifier
+        self.date = notification.date
+        self.identifier = notification.request.identifier
+        self.title = notification.request.content.title
+        self.subtitle = notification.request.content.subtitle
+        self.body = notification.request.content.body
+        self.badge = notification.request.content.badge
+        self.sound = notification.request.content.sound
+        self.launchImageName = notification.request.content.launchImageName
+        
+        let userInfo = notification.request.content.userInfo
+//        self.userInfo = userInfo
+
+        let ck = userInfo["ck"] as? [AnyHashable:Any]
+        self.userID = ck?["ckuserid"] as? String
+        
+        let qry = ck?["qry"] as? [AnyHashable:Any]
+        self.recordID = qry?["rid"] as? String
+        self.subscriptionID = qry?["sid"] as? String
+        self.zoneID = qry?["zid"] as? String
+        
+    }
 }

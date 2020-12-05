@@ -70,16 +70,34 @@ open class CKMDefault {
     }
     
     public static func removeFromCacheCascade(_ recordName:String) {
-        guard let record = Self.cache[recordName] else {return}
+        var recordNames = childReferencesInCacheFor(recordName)
+                            .compactMap{$0.recordID.recordName}
+        recordNames.append(recordName)
+        recordNames.forEach{Self.cache[$0] = nil}
         
-        for item in record.record.allKeys() {
-            guard let value = (record.record.value(forKey: item) as? CKRecord.Reference) else { continue }
-            removeFromCacheCascade(value.recordID.recordName)
-        }
-        Self.cache[recordName] = nil
     }
 
-    
+    public static func childReferencesInCacheFor(_ recordName:String)->[CKRecord.Reference] {
+        guard let record = Self.cache[recordName] else {return [] }
+        var result:[CKRecord.Reference] = []
+        
+        for item in record.record.allKeys() {
+            guard let value = record.record.value(forKey: item)  else { continue }
+            
+            if let reference = (value as? CKRecord.Reference) {
+                let ancestors = childReferencesInCacheFor(reference.recordID.recordName)
+                result.append(contentsOf: ancestors)
+                result.append(reference)
+            }
+            else if let references = (value as? [CKRecord.Reference]) {
+                let recordNames = references.compactMap{ $0.recordID.recordName }
+                let ancestors = recordNames.flatMap{ childReferencesInCacheFor($0) }
+                result.append(contentsOf: ancestors)
+                result.append(contentsOf: references)
+            }
+        }
+        return result
+    }
 
     
 	

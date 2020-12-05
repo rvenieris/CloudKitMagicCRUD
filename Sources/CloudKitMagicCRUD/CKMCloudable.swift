@@ -349,6 +349,23 @@ extension CKMCloudable {
 			CKMDefault.removeFromCache(recordName)
 		})
 	}
+    
+    //TODO: Make it Works
+    public func ckDeleteCascade(then completion:@escaping (Result<String, Error>)->Void) {
+        guard let recordName = self.recordName else { return }
+        
+        CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
+            
+            // Got error
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            // else
+            completion(.success(recordName))
+            CKMDefault.removeFromCache(recordName)
+        })
+    }
 	
 	public static func load(from record:CKRecord)throws->Self {
 		if record.haveCycle() {
@@ -387,6 +404,16 @@ extension CKMCloudable {
         CKMDefault.removeFromCacheCascade(self.recordName ?? "_")
         self.reloadIgnoringFail(completion: completion)
     }
+    public func syncRefresh()->Self {
+        var refreshedRecord = self
+        CKMDefault.removeFromCacheCascade(self.recordName ?? "_")
+        refreshedRecord.reloadIgnoringFail(completion: {
+            CKMDefault.semaphore.signal()
+        })
+        CKMDefault.semaphore.wait()
+        return refreshedRecord
+    }
+
 
 }
 
@@ -399,6 +426,5 @@ extension CKMCloudable {
 
 /// Protocol for CK Notification Observers be warned when some register changed
 public protocol CKMRecordObserver {
-	func onChange(ckRecordtypeName:String)
+    func onReceive(notification: CKMNotification)
 }
-
