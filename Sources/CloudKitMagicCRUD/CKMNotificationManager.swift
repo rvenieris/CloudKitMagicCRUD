@@ -41,8 +41,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 												 alertBody:String? = nil,
                                                  completion: @escaping (Result<CKSubscription, Error>)->Void ) {
     
-		UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-//		UIApplication.shared.applicationIconBadgeNumber = 0
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
 		let predicate = predicate ?? NSPredicate(value: true)
 		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
