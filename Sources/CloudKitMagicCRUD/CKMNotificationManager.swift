@@ -12,7 +12,7 @@ import UserNotifications
 
 open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	open var observers:[CKRecord.RecordType:NSPointerArray] = [:]
-	public static var shared = CKMNotificationManager()
+    public static var shared = { CKMNotificationManager() }()
 	
 	
 	private override init() {
@@ -33,26 +33,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 			}
 		})
 	}
-	
-	//	func createNotification<T:CKCloudable>(to recordObserver:CKMRecordObserver,
-	//										   for recordType:T.Type,
-	//										   adding subscription:CKQuerySubscription,
-	//										   with notificationInfo:CKSubscription.NotificationInfo) {
-	//		let subscription = CKQuerySubscription(recordType: recordType.ckRecordType, predicate: predicate, options:options)
-	//		subscription.notificationInfo = info
-	//
-	//		self.add(observer: recordObserver, to: recordType.ckRecordType)
-	//		//TODO: Pegar as subscriptions que já existe e só adicionar se necessário
-	//		CKDefault.database.save(subscription, completionHandler: { subscription, error in
-	//			if error == nil {
-	//				// Subscription saved successfully
-	//				print("subscribed")
-	//			} else {
-	//				// An error occurred
-	//				print("error in subscription", error ?? "no error")
-	//			}
-	//		})
-	//}
 	
 	open func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
 												 for recordType:T.Type,
@@ -84,7 +64,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
             if let subscription = subscription {
                 // Subscription saved successfully
                 completion(.success(subscription))
-                debugPrint("subscribed")
             }
             else if let error = error {
                 // An error occurred

@@ -56,7 +56,6 @@ extension CKMCloudable {
 		let mirror = Mirror(reflecting: self)
 		for field in mirror.children {
 			let value_object = field.value as AnyObject
-			print(value_object, object)
 			if let cloudRecord = value_object as? CKMCloudable {
 				let value = cloudRecord as AnyObject
 				if value === (object as AnyObject) { return true }
@@ -113,14 +112,12 @@ extension CKMCloudable {
 		let preparedRecord = CKMPreparedRecord(for: self, in:ckRecord)
 		let mirror = Mirror(reflecting: self)
 		
-		//		print("class \(mirror.subjectType) {")
 		for field in mirror.children{
 			// Trata valores à partir dde um mirroing
 			
 			var value = field.value
 			guard !"\(value)".elementsEqual("nil") else {continue} // se valor nil nem perde tempo
 			guard let key = field.label else { fatalError("Type \(mirror) have field without label.") }
-			//			print("    \(key): \(type(of: field.value)) = \(field.value)")
 			
 			//MARK: Tratamento de todos os tipos possíveis
 			
@@ -265,7 +262,6 @@ extension CKMCloudable {
 			// else
 			if let records = records {
 				let result:[Self] = records.compactMap{
-					debugPrint($0.value(forKey: "name") ?? "--", $0.recordID.recordName)
 					let dictionary = $0.asDictionary
 					
 					return try? Self.load(from: dictionary)}
