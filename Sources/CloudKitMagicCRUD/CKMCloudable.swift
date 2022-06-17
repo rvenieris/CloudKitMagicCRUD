@@ -7,6 +7,7 @@
 //
 
 import CloudKit
+import CodableExtensions
 
 public protocol CKMCloudable:Codable {
 	var recordName:String? { get set }

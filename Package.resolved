@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "CodableExtensions",
+        "repositoryURL": "https://github.com/rvenieris/CodableExtension.git",
+        "state": {
+          "branch": "main",
+          "revision": "448cc85665d439e223b005bfa1298b0b08b734b1",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
