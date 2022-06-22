@@ -12,7 +12,7 @@ import Foundation
 public enum CRUDError:Int, Error {
 	case invalidRecord
 	case invalidRecordID
-	case cannnotMapAllRecords
+	case cannotMapAllRecords
 	case cannotDeleteRecord
 	case cannotMapRecordToObject
 	case noSurchRecord

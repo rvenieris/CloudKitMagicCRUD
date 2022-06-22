@@ -7,7 +7,7 @@
 //
 
 import CloudKit
-import CodableExtensions
+//import CodableExtensions
 
 public protocol CKMCloudable:Codable {
 	var recordName:String? { get set }
@@ -268,7 +268,7 @@ extension CKMCloudable {
 					return try? Self.load(from: dictionary)}
 				
 				guard records.count == result.count else {
-					completion(.failure(CRUDError.cannnotMapAllRecords))
+					completion(.failure(CRUDError.cannotMapAllRecords))
 					return
 				}
 				CKMDefault.addToCache(records)
