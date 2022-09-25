@@ -6,7 +6,8 @@
 //  Copyright © 2020 Ricardo Venieris. All rights reserved.
 //
 
-import UIKit
+#if canImport(UIKit)
+    // iOS, tvOS, and watchOS
 import CloudKit
 import UserNotifications
 
@@ -177,3 +178,24 @@ open class CKMNotification {
         
     }
 }
+
+
+    /// Adding register observer method to CKMCloudable
+extension CKMCloudable {
+    public static func register(observer:CKMRecordObserver) {
+        
+    }
+}
+
+    /// Protocol for CK Notification Observers be warned when some register changed
+public protocol CKMRecordObserver {
+    func onReceive(notification: CKMNotification)
+}
+
+
+extension CKMDefault {
+    public static var notificationManager:CKMNotificationManager! = CKMNotificationManager.shared
+    
+}
+
+#endif

@@ -3,10 +3,10 @@
     "pins": [
       {
         "package": "CodableExtensions",
-        "repositoryURL": "https://github.com/rvenieris/CodableExtension.git",
+        "repositoryURL": "https://github.com/rvenieris/CodableExtensions.git",
         "state": {
           "branch": "main",
-          "revision": "3c7c6ba4d5552811c663d2d96f343e96c637b263",
+          "revision": "e671737b81ffe39c17523f0caac73e93cce36927",
           "version": null
         }
       }

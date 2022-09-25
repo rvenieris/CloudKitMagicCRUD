@@ -14,7 +14,7 @@ public protocol CKMRecord: CKMCloudable, Hashable {
 
 extension CKMRecord {
 	public func hash(into hasher: inout Hasher) {
-		hasher.combine(recordName ?? self.asString ?? UUID().uuidString)
+		hasher.combine(recordName ?? UUID().uuidString)
 	}
 	
 	public static func == (lhs: Self, rhs: Self) -> Bool {

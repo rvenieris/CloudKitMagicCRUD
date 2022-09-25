@@ -7,9 +7,10 @@
 //
 
 import CloudKit
+import CodableExtensions
 
 extension CKRecord {
-	open var asDictionary:[String:Any] {
+	public var asDictionary:[String:Any] {
 		var result:[String:Any] = [:]
 		result["recordName"] = self.recordID.recordName
 		result["createdBy"] = self.creatorUserRecordID?.recordName
@@ -243,70 +244,3 @@ public extension Optional {
 		return Wrapped.self
 	}
 }
-
-
-public extension Dictionary where Key == String {
-    public var asData:Data? {
-        let dic = CertifiedCodableData(self).dictionary
-        return try? JSONSerialization.data(withJSONObject: dic, options: [])
-    }
-    
-}
-
-public struct CertifiedCodableData:Codable {
-    private var string:[String:String] = [:]
-    private var number:[String:Double] = [:]
-    private var date:[String:Date] = [:]
-    private var data:[String:Data] = [:]
-    private var custom:[String:CertifiedCodableData] = [:]
-    
-    private var stringArray:[String:[String]] = [:]
-    private var numberArray:[String:[Double]] = [:]
-    private var dateArray:[String:[Date]] = [:]
-    private var dataArray:[String:[Data]] = [:]
-    private var customArray:[String:[CertifiedCodableData]] = [:]
-    
-    public var dictionary:[String:Any] {
-        var dic:[String:Any] = [:]
-        string.forEach{dic[$0.key] = $0.value}
-        number.forEach{dic[$0.key] = $0.value}
-        date.forEach{dic[$0.key] = $0.value.timeIntervalSinceReferenceDate}
-        data.forEach{dic[$0.key] = $0.value.base64EncodedString()}
-        custom.forEach{dic[$0.key] = $0.value.dictionary}
-        
-        stringArray.forEach{dic[$0.key] = $0.value}
-        numberArray.forEach{dic[$0.key] = $0.value}
-        dateArray.forEach{dic[$0.key] = $0.value.map{$0.timeIntervalSinceReferenceDate}}
-        dataArray.forEach{dic[$0.key] = $0.value.map{$0.base64EncodedString()}}
-        customArray.forEach{dic[$0.key] = $0.value.map{$0.dictionary}}
-        
-        return dic
-    }
-    
-    
-    public init(_ originalData:[String:Any]) {
-        for item in originalData {
-            
-            if let dado = item.value as? String          { string      [item.key] = dado}
-            else if let dado = item.value as? Double          { number      [item.key] = dado}
-            else if let dado = item.value as? Date            { date          [item.key] = dado}
-            else if let dado = item.value as? Data            { data          [item.key] = dado}
-            
-            else if let dado = item.value as? [String         ] { stringArray[item.key] = dado}
-            else if let dado = item.value as? [Double         ] { numberArray[item.key] = dado}
-            else if let dado = item.value as? [Date           ] { dateArray  [item.key] = dado}
-            else if let dado = item.value as? [Data             ] { dataArray  [item.key] = dado}
-            
-            else if let dado = item.value as? CKAsset   { data[item.key] = dado.fileURL?.contentAsData}
-            else if let dado = item.value as? [CKAsset] { dataArray[item.key] = dado.compactMap{$0.fileURL?.contentAsData} }
-            
-            else if let dado = item.value as? [String:Any]   { custom      [item.key] = CertifiedCodableData(dado)}
-            else if let dado = item.value as? [[String:Any]] { customArray[item.key] = dado.map{CertifiedCodableData($0)} }
-            
-            else if let _ = item.value as? [Any         ] { stringArray[item.key] = []}
-            
-            else { debugPrint("Unknown Type in originalData: \(item.key) = \(item.value)") }
-        }
-    }
-}
-

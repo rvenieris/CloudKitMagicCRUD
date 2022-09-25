@@ -35,8 +35,6 @@ open class CKMDefault {
         return container.publicCloudDatabase
     }()
     
-    public static var notificationManager:CKMNotificationManager! = CKMNotificationManager.shared
-    
     public struct CacheItem {
         let record: CKRecord
         let addedAt:Date

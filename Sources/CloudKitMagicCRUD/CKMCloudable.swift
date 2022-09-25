@@ -7,7 +7,6 @@
 //
 
 import CloudKit
-//import CodableExtensions
 
 public protocol CKMCloudable:Codable {
 	var recordName:String? { get set }
@@ -414,14 +413,3 @@ extension CKMCloudable {
 
 }
 
-/// Notification Managment
-extension CKMCloudable {
-	public static func register(observer:CKMRecordObserver) {
-		
-	}
-}
-
-/// Protocol for CK Notification Observers be warned when some register changed
-public protocol CKMRecordObserver {
-    func onReceive(notification: CKMNotification)
-}
