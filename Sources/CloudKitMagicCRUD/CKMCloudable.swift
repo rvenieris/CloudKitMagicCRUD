@@ -76,6 +76,7 @@ extension CKMCloudable {
 		var savedReference:CKRecord.Reference? = nil
 		
 		// Inicio assincrono
+        
 		self.ckSave(then: { result in
 			switch result {
 				case .success(let savedRecord):
@@ -92,6 +93,7 @@ extension CKMCloudable {
 		
 	}
 	
+    
 	public func prepareCKRecord()throws ->CKMPreparedRecord {
 		let ckRecord:CKRecord = {
 			var ckRecord:CKRecord?
@@ -201,41 +203,43 @@ extension CKMCloudable {
 			.failure(let error) an error
 	*/
 	public func ckSave(then completion:@escaping (Result<Any, Error>)->Void) {
-		var ckPreparedRecord:CKMPreparedRecord
-		do {
-			ckPreparedRecord = try self.prepareCKRecord()
-		} catch let error {
-			completion(.failure(error))
-			return
-		}
-		
-		CKMDefault.database.save(ckPreparedRecord.record, completionHandler: {
-			(record,error) -> Void in
-			
-			// Got error
-			if let error = error {
-				completion(.failure(error))
-				return
-			}
-			
-			// else
-			if let record = record {
-				// Executar as pendências, se houver
-				ckPreparedRecord.dispatchPending(for: record, then: { result in
-					switch result {
-						case .success(let record):
-							do {
-								let object = try Self.load(from: record.asDictionary)
-								completion(.success(object))
-							} catch {
-								completion(.failure(CRUDError.cannotMapRecordToObject))
-							}
-						case .failure(let error):
-							completion(.failure(error))
-					}
-				})
-			}
-		})
+        CKMDefault.backgroundQueue.sync {
+            var ckPreparedRecord:CKMPreparedRecord
+            do {
+                ckPreparedRecord = try self.prepareCKRecord()
+            } catch let error {
+                completion(.failure(error))
+                return
+            }
+            
+            CKMDefault.database.save(ckPreparedRecord.record, completionHandler: {
+                (record,error) -> Void in
+                
+                    // Got error
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                    // else
+                if let record = record {
+                        // Executar as pendências, se houver
+                    ckPreparedRecord.dispatchPending(for: record, then: { result in
+                        switch result {
+                            case .success(let record):
+                                do {
+                                    let object = try Self.load(from: record.asDictionary)
+                                    completion(.success(object))
+                                } catch {
+                                    completion(.failure(CRUDError.cannotMapRecordToObject))
+                                }
+                            case .failure(let error):
+                                completion(.failure(error))
+                        }
+                    })
+                }
+            })
+        }
 	}
 	
 	/**
@@ -245,37 +249,38 @@ extension CKMCloudable {
 	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
 	*/
 	public static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor] = [], predicate:NSPredicate = NSPredicate(value:true), then completion:@escaping (Result<Any, Error>)->Void) {
-		//Preparara a query
-		let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
-		query.sortDescriptors = sortKeys.ckSortDescriptors
-		
-		
-		// Executar a query
-		CKMDefault.database.perform(query, inZoneWith: nil, completionHandler: { (records, error) -> Void in
-			
-			// Got error
-			if let error = error {
-				completion(.failure(error))
-				return
-			}
-			
-			// else
-			if let records = records {
-				let result:[Self] = records.compactMap{
-					let dictionary = $0.asDictionary
-					
-					return try? Self.load(from: dictionary)}
-				
-				guard records.count == result.count else {
-					completion(.failure(CRUDError.cannotMapAllRecords))
-					return
-				}
-				CKMDefault.addToCache(records)
-				completion(.success(result))
-			}
-			
-		})
-		
+        CKMDefault.backgroundQueue.sync {
+                //Preparara a query
+            let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
+            query.sortDescriptors = sortKeys.ckSortDescriptors
+            
+            
+                // Executar a query
+            CKMDefault.database.perform(query, inZoneWith: nil, completionHandler: { (records, error) -> Void in
+                
+                    // Got error
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                    // else
+                if let records = records {
+                    let result:[Self] = records.compactMap{
+                        let dictionary = $0.asDictionary
+                        
+                        return try? Self.load(from: dictionary)}
+                    
+                    guard records.count == result.count else {
+                        completion(.failure(CRUDError.cannotMapAllRecords))
+                        return
+                    }
+                    CKMDefault.addToCache(records)
+                    completion(.success(result))
+                }
+                
+            })
+        }
 	}
 	
 	/**
@@ -285,82 +290,85 @@ extension CKMCloudable {
 	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
 	*/
 	public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void) {
-		
-		// Executar o fetch
-		
-		// try get from cache
-		if let record = CKMDefault.getFromCache(recordName) {
-			do {
-				//				let result:Self = try Self.ckLoad(from: record)
-				let result:Self = try Self.load(from: record.asDictionary)
-				completion(.success(result))
-			} catch {
-				completion(.failure(CRUDError.cannotMapRecordToObject))
-				return
-			}
-		}
-		
-		// else get from database
-		CKMDefault.database.fetch(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (record, error) -> Void in
-			
-			// Got error
-			if let error = error {
-				completion(.failure(error))
-				return
-			}
-			
-			
-			// else
-			if let record = record {
-				do {
-					CKMDefault.addToCache(record)
-					let result:Self = try Self.load(from: record)
-					completion(.success(result))
-					return
-				} catch {
-					CKMDefault.removeFromCache(record.recordID.recordName)
-					completion(.failure(CRUDError.cannotMapRecordToObject))
-					return
-				}
-			} else {
-				completion(.failure(CRUDError.noSurchRecord))
-			}
-			
-		})
-		
+        CKMDefault.backgroundQueue.sync {
+                // Executar o fetch
+            
+                // try get from cache
+            if let record = CKMDefault.getFromCache(recordName) {
+                do {
+                        //				let result:Self = try Self.ckLoad(from: record)
+                    let result:Self = try Self.load(from: record.asDictionary)
+                    completion(.success(result))
+                } catch {
+                    completion(.failure(CRUDError.cannotMapRecordToObject))
+                    return
+                }
+            }
+            
+                // else get from database
+            CKMDefault.database.fetch(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (record, error) -> Void in
+                
+                    // Got error
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                
+                    // else
+                if let record = record {
+                    do {
+                        CKMDefault.addToCache(record)
+                        let result:Self = try Self.load(from: record)
+                        completion(.success(result))
+                        return
+                    } catch {
+                        CKMDefault.removeFromCache(record.recordID.recordName)
+                        completion(.failure(CRUDError.cannotMapRecordToObject))
+                        return
+                    }
+                } else {
+                    completion(.failure(CRUDError.noSurchRecord))
+                }
+                
+            })
+        }
 	}
 	
 	public func ckDelete(then completion:@escaping (Result<String, Error>)->Void) {
 		guard let recordName = self.recordName else { return }
-		
-		CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
-			
-			// Got error
-			if let error = error {
-				completion(.failure(error))
-				return
-			}
-			// else
-			completion(.success(recordName))
-			CKMDefault.removeFromCache(recordName)
-		})
+        CKMDefault.backgroundQueue.sync {
+            CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
+                
+                    // Got error
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                    // else
+                completion(.success(recordName))
+                CKMDefault.removeFromCache(recordName)
+            })
+        }
 	}
     
     //TODO: Make it Works
     public func ckDeleteCascade(then completion:@escaping (Result<String, Error>)->Void) {
         guard let recordName = self.recordName else { return }
-        
-        CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
+        CKMDefault.backgroundQueue.sync {
+            CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
+                
+                    // Got error
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                    // else
+                completion(.success(recordName))
+                CKMDefault.removeFromCache(recordName)
+            })
             
-            // Got error
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            // else
-            completion(.success(recordName))
-            CKMDefault.removeFromCache(recordName)
-        })
+        }
     }
 	
 	public static func load(from record:CKRecord)throws->Self {
@@ -375,24 +383,26 @@ extension CKMCloudable {
 	
     
     public mutating func reloadIgnoringFail(completion: ()->Void) {
-        guard let recordName = self.recordName else { return }
-        DispatchQueue.global().sync {
-            var result:Self = self
-            CKMDefault.database.fetch(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (record, error) -> Void in
-
-                // else
-                if let record = record {
-                    do {
-                        CKMDefault.addToCache(record)
-                        result = try Self.load(from: record)
-                        CKMDefault.semaphore.signal()
-                    } catch {}
-                }
-
-            })
-            CKMDefault.semaphore.wait()
-            self = result
-            completion()
+        CKMDefault.backgroundQueue.sync {
+            guard let recordName = self.recordName else { return }
+            DispatchQueue.global().sync {
+                var result:Self = self
+                CKMDefault.database.fetch(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (record, error) -> Void in
+                    
+                        // else
+                    if let record = record {
+                        do {
+                            CKMDefault.addToCache(record)
+                            result = try Self.load(from: record)
+                            CKMDefault.semaphore.signal()
+                        } catch {}
+                    }
+                    
+                })
+                CKMDefault.semaphore.wait()
+                self = result
+                completion()
+            }
         }
     }
     
