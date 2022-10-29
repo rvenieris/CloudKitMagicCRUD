@@ -6,8 +6,9 @@
 //  Copyright © 2020 Ricardo Venieris. All rights reserved.
 //
 
-#if canImport(UIKit)
     // iOS, tvOS, and watchOS
+#if canImport(UIKit)
+import UIKit
 import CloudKit
 import UserNotifications
 
@@ -28,7 +29,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 			if authorized {
 				DispatchQueue.main.async {
 					//					let app = UIApplication.shared.delegate as! AppDelegate
-					UIApplication.shared.registerForRemoteNotifications()
+//                    if #available(iOS 8, macCatalyst 13.1, tvOS 9, *)
+                    UIApplication.shared.registerForRemoteNotifications()
 				}
 				
 			}
