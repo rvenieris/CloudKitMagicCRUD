@@ -247,6 +247,7 @@ extension CKMCloudable {
 	- sortedBy a array of  SortDescriptors
 	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
 	*/
+    @available(*, deprecated, message: "Use the new version with custom limit and cursor")
 	public static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor] = [], predicate:NSPredicate = NSPredicate(value:true), then completion:@escaping (Result<Any, Error>)->Void) {
         
                 //Preparara a query
@@ -422,3 +423,99 @@ extension CKMCloudable {
 
 }
 
+
+    /// New implementation of CKLoadAll with cursor
+extension CKMCloudable {
+        ///
+        /// # Read all records from a type, limited on *limit* maxRecords.
+        /// - Parameters:
+        ///   - cursor         : A  *CKQueryOperation.Cursor* for query records next page
+        ///   - limit          :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+        ///
+        /// - Returns          :
+        ///    - a (records, queryCursor)  in a completion handler where:
+        ///
+        ///       - records          :  contais a type objects array [T] encapsulated in a [Any]
+        ///       - queryCursor  : contains a cursor for next page
+        ///
+        ///    - or
+        ///       - an Error, if something goes wrong.
+    public static func ckLoadNext(cursor:CKQueryOperation.Cursor,
+                                  limit:Int = CKQueryOperation.maximumResults,
+                                  then completion:@escaping (Result<(records:[Any], queryCursor: CKQueryOperation.Cursor? ), Error>)->Void) {
+        Self.ckGLoadAll(cursor: cursor, limit: limit, then: completion)
+    }
+    
+    ///
+    /// # Read all records from a type, limited on *limit* maxRecords.
+    /// - Parameters:
+    ///   - predicate : A NSPredicate for query constraints
+    ///   - sortedBy   :  a array of  SortDescriptors
+    ///   - limit          :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+    ///
+    /// - Returns          :
+    ///    - a (records, queryCursor)  in a completion handler where:
+    ///
+    ///       - records          :  contais a type objects array [T] encapsulated in a [Any]
+    ///       - queryCursor  : contains a cursor for next page
+    ///
+    ///    - or
+    ///       - an Error, if something goes wrong.
+
+    public static func ckLoadAll(predicate:NSPredicate = NSPredicate(value:true),
+                                 sortedBy sortKeys:[CKSortDescriptor] = [],
+                                 limit:Int = CKQueryOperation.maximumResults,
+                                 then completion:@escaping (Result<(records:[Any], queryCursor: CKQueryOperation.Cursor? ), Error>)->Void) {
+        Self.ckGLoadAll(predicate: predicate, sortedBy: sortKeys, limit: limit, then: completion)
+    }
+    
+    private static func ckGLoadAll(predicate:NSPredicate = NSPredicate(value:true),
+                                   sortedBy sortKeys:[CKSortDescriptor] = [],
+                                   cursor:CKQueryOperation.Cursor? = nil,
+                                   limit:Int = CKQueryOperation.maximumResults,
+                                   then completion:@escaping (Result<(records:[Any], queryCursor: CKQueryOperation.Cursor? ), Error>)->Void) {
+        
+            var records:[Self] = []
+            var ckRecords:[CKRecord] = []
+                //Preparara a query
+            
+            let operation:CKQueryOperation = {
+                if let cursor { return CKQueryOperation(cursor: cursor)}
+                    // else
+                let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
+                query.sortDescriptors = sortKeys.ckSortDescriptors
+                return CKQueryOperation(query: query)
+            }()
+            operation.resultsLimit = limit
+            
+            
+            operation.recordFetchedBlock = {record in
+                ckRecords.append(record)
+                if let item = try? Self.load(from: record.asDictionary) {
+                    records.append(item)
+                }
+            }
+            
+            operation.queryCompletionBlock = { cursor, error in
+                
+                if let error { completion(.failure(error)) } else {
+                    
+                        // Se não mapeou todos completion será chamado 2x, failure + os records que foram mapeados
+                    guard ckRecords.count == records.count else {
+                        completion(.failure(CRUDError.cannotMapAllRecords))
+                        if records.count > 0 {
+                            completion(.success((records:ckRecords, queryCursor:cursor)))
+                        }
+                        return
+                    } // end guard
+                    
+                    CKMDefault.addToCache(ckRecords)
+                    completion(.success((records:records, queryCursor:cursor)))
+                }
+                
+            }
+                // Run operation
+            CKMDefault.database.add(operation)
+        
+    }
+}
