@@ -43,9 +43,6 @@ open class CKMDefault {
     /// The default semaphore for awaiting subqueries
     public static let semaphore = DispatchSemaphore(value: 0)
     
-    /// The default backgroundQueue to solve iOS14 QOS_CLASS_UTILITY.  avoid priority inversions issue
-    public static let backgroundQueue = DispatchQueue(label: "background_queue", qos: .background)
-    
     /// Cache inplementationn
     private static var cache:[String:CacheItem] = [:]
     

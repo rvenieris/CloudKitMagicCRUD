@@ -203,7 +203,7 @@ extension CKMCloudable {
 			.failure(let error) an error
 	*/
 	public func ckSave(then completion:@escaping (Result<Any, Error>)->Void) {
-        CKMDefault.backgroundQueue.sync {
+
             var ckPreparedRecord:CKMPreparedRecord
             do {
                 ckPreparedRecord = try self.prepareCKRecord()
@@ -239,7 +239,6 @@ extension CKMCloudable {
                     })
                 }
             })
-        }
 	}
 	
 	/**
@@ -249,7 +248,7 @@ extension CKMCloudable {
 	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
 	*/
 	public static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor] = [], predicate:NSPredicate = NSPredicate(value:true), then completion:@escaping (Result<Any, Error>)->Void) {
-        CKMDefault.backgroundQueue.sync {
+        
                 //Preparara a query
             let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
             query.sortDescriptors = sortKeys.ckSortDescriptors
@@ -280,7 +279,7 @@ extension CKMCloudable {
                 }
                 
             })
-        }
+        
 	}
 	
 	/**
@@ -290,7 +289,7 @@ extension CKMCloudable {
 	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
 	*/
 	public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void) {
-        CKMDefault.backgroundQueue.sync {
+        
                 // Executar o fetch
             
                 // try get from cache
@@ -332,12 +331,12 @@ extension CKMCloudable {
                 }
                 
             })
-        }
+        
 	}
 	
 	public func ckDelete(then completion:@escaping (Result<String, Error>)->Void) {
 		guard let recordName = self.recordName else { return }
-        CKMDefault.backgroundQueue.sync {
+        
             CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
                 
                     // Got error
@@ -349,13 +348,13 @@ extension CKMCloudable {
                 completion(.success(recordName))
                 CKMDefault.removeFromCache(recordName)
             })
-        }
+        
 	}
     
     //TODO: Make it Works
     public func ckDeleteCascade(then completion:@escaping (Result<String, Error>)->Void) {
         guard let recordName = self.recordName else { return }
-        CKMDefault.backgroundQueue.sync {
+        
             CKMDefault.database.delete(withRecordID: CKRecord.ID(recordName: recordName), completionHandler: { (_, error) -> Void in
                 
                     // Got error
@@ -368,7 +367,7 @@ extension CKMCloudable {
                 CKMDefault.removeFromCache(recordName)
             })
             
-        }
+        
     }
 	
 	public static func load(from record:CKRecord)throws->Self {
@@ -381,9 +380,8 @@ extension CKMCloudable {
 		return result
 	}
 	
-    
     public mutating func reloadIgnoringFail(completion: ()->Void) {
-        CKMDefault.backgroundQueue.sync {
+        
             guard let recordName = self.recordName else { return }
             DispatchQueue.global().sync {
                 var result:Self = self
@@ -403,13 +401,14 @@ extension CKMCloudable {
                 self = result
                 completion()
             }
-        }
+        
     }
     
     public mutating func refresh(completion: ()->Void) {
         CKMDefault.removeFromCacheCascade(self.recordName ?? "_")
         self.reloadIgnoringFail(completion: completion)
     }
+    
     public func syncRefresh()->Self {
         var refreshedRecord = self
         CKMDefault.removeFromCacheCascade(self.recordName ?? "_")
