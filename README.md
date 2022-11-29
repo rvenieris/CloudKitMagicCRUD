@@ -83,20 +83,32 @@ protocol CKMRecord {
 	*/
 	func ckSave(then completion:@escaping (Result<Any, Error>)->Void)
 	
-	/**
-	Read all records from a type
-	- Parameters:
-	- sortedBy a array of  SortDescriptors (or string array)
-	- predicate a NSPredicate with some query  restrictions
-	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
-	*/
-	static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor],
-						  predicate:NSPredicate,
-						  then completion:@escaping (Result<Any, Error>)->Void)
+    /**
+     Read all records from a type, limited on *limit* maxRecords.
+     - Parameters:
+     - predicate: A NSPredicate for query constraints
+     - sortedBy      :  a array of  SortDescriptors
+     - limit              :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+     - returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
+     */
+    public static func ckLoadAll(predicate:NSPredicate = NSPredicate(value:true),
+                                 sortedBy sortKeys:[CKSortDescriptor] = [],
+                                 limit:Int = CKQueryOperation.maximumResults,
+                                 then completion:@escaping (Result<(records:[Any], queryCursor: CKQueryOperation.Cursor? ), Error>)->Void)
 	
+    /**
+     Read all next page records from a type, with a result cursor. (to be used after ckLoadAll.)
+     - Parameters:
+     - cursor       : A  *CKQueryOperation.Cursor* for query records next page
+     - limit              :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+     - returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
+     */
+    public static func ckLoadNext(cursor:CKQueryOperation.Cursor,
+                                  limit:Int = CKQueryOperation.maximumResults,
+                                  then completion:@escaping (Result<(records:[Any], queryCursor: CKQueryOperation.Cursor? ), Error>)->Void)
 	
 	/**
-	Read all records from a type
+	Read records from a type
 	- Parameters:
 	- recordName an iCloud recordName id for fetch
 	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
@@ -140,7 +152,7 @@ class CKMNotificationManager {
 }
 ```
 
-## Another capabilities
+## Other capabilities
 
 ### List support of Functions and capabilities
 Here are other functionalities of this package that you may need
