@@ -3,7 +3,7 @@
 //  CloudKitMagic
 //
 //  Created by Ricardo Venieris on 22/08/20.
-//  Copyright © 2020 Ricardo Venieris. All rights reserved.
+//  Copyright © 2020 Ricardo Venieris. All rights reserved. 2
 //
 
 import CloudKit
@@ -202,6 +202,15 @@ extension CKMCloudable {
 			.success(let record:CKMRecord) -> The saved record, with correct Object Type, in a Any shell.  Just cast this to it's original type.
 			.failure(let error) an error
 	*/
+    
+    public func ckSave() async throws ->Self {
+        
+        return self
+    }
+    
+    
+    
+    
 	public func ckSave(then completion:@escaping (Result<Any, Error>)->Void) {
 
             var ckPreparedRecord:CKMPreparedRecord
@@ -517,5 +526,104 @@ extension CKMCloudable {
                 // Run operation
             CKMDefault.database.add(operation)
         
+    }
+}
+
+
+
+
+public typealias CKMCursor = CKQueryOperation.Cursor
+public typealias CKMRecordName = String
+public typealias CKRecordAsyncResult = (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)],
+                                        queryCursor: CKQueryOperation.Cursor?)
+public typealias CKMRecordAsyncResult = (Result<(records:[Any],
+                                                 queryCursor: CKMCursor?,
+                                                 partialErrors: [CKMRecordName:Error]), Error>)
+extension CKMCloudable {
+        ///
+        /// # Read all records from a type, limited on *limit* maxRecords.
+        /// - Parameters:
+        ///   - cursor         : A  *CKQueryOperation.Cursor* for query records next page
+        ///   - limit          :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+        ///
+        /// - Returns          :
+        ///    - a (records, queryCursor)  in a completion handler where:
+        ///
+        ///       - records          :  contais a type objects array [T] encapsulated in a [Any]
+        ///       - queryCursor  : contains a cursor for next page
+        ///
+        ///    - or
+        ///       - an Error, if something goes wrong.
+    public static func ckLoadNext(cursor:CKQueryOperation.Cursor,
+                                  limit:Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        return await Self.ckGLoadAll(cursor: cursor, limit: limit)
+    }
+    
+        ///
+        /// # Read all records from a type, limited on *limit* maxRecords.
+        /// - Parameters:
+        ///   - predicate : A NSPredicate for query constraints
+        ///   - sortedBy   :  a array of  SortDescriptors
+        ///   - limit          :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+        ///
+        /// - Returns          :
+        ///    - a (records, queryCursor)  in a completion handler where:
+        ///
+        ///       - records          :  contais a type objects array [T] encapsulated in a [Any]
+        ///       - queryCursor  : contains a cursor for next page
+        ///
+        ///    - or
+        ///       - an Error, if something goes wrong.
+    
+    public static func ckLoadAll(predicate:NSPredicate = NSPredicate(value:true),
+                                 sortedBy sortKeys:[CKSortDescriptor] = [],
+                                 limit:Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        return await Self.ckGLoadAll(predicate: predicate, sortedBy: sortKeys, limit: limit)
+    }
+    
+    private static func ckGLoadAll(predicate:NSPredicate = NSPredicate(value:true),
+                                   sortedBy sortKeys:[CKSortDescriptor] = [],
+                                   cursor:CKQueryOperation.Cursor? = nil,
+                                   limit:Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        
+        var records:[Self] = []
+        var ckRecords:[CKRecord] = []
+        var ckErrors:[CKMRecordName:Error] = [:]
+            //Preparara a query
+        
+        let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
+        query.sortDescriptors = sortKeys.ckSortDescriptors
+        
+        do {
+            var result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+            if let cursor {
+                result = try await CKMDefault.database.records(continuingMatchFrom: cursor)
+            } else {
+                result = try await CKMDefault.database.records(matching: query, resultsLimit: limit)
+            }
+            
+            result.matchResults.forEach { matchResult in
+                switch matchResult.1 {
+                    case .success(let ckRecord):
+                        ckRecords.append(ckRecord)
+                        do {
+                            let item = try Self.load(from: ckRecord.asDictionary)
+                            records.append(item)
+                        } catch {
+                            ckErrors[matchResult.0.recordName] = error
+                        }
+                    case .failure(let error):
+                        ckErrors[matchResult.0.recordName] = error
+                }
+            }
+            
+            CKMDefault.addToCache(ckRecords)
+            
+            return .success((records: records, queryCursor: result.queryCursor, partialErrors: ckErrors))
+            
+            
+        } catch {
+            return .failure(error)
+        }
     }
 }
