@@ -46,11 +46,11 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
     
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
 		let predicate = predicate ?? NSPredicate(value: true)
-		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
+//		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
 		
 		let info = CKSubscription.NotificationInfo()
 		info.alertBody = alertBody
-		info.soundName = "default"
+//		info.soundName = "default"
 		info.category = recordType.ckRecordType
 		info.shouldSendContentAvailable = true
 		info.shouldSendMutableContent = true
