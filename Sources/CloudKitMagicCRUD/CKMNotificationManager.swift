@@ -36,7 +36,25 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 			}
 		})
 	}
-	
+    
+    open func createNotification<T:CKMCloudable>(to recordObserver: CKMRecordObserver,
+                                                 for recordType: T.Type,
+                                                 options: CKQuerySubscription.Options? = nil,
+                                                 predicate: NSPredicate? = nil,
+                                                 alertBody: String? = nil) async throws -> CKSubscription {
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            createNotification(to: recordObserver, for: recordType, options: options, oppredicate: predicate, alertBody: alertBody) { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+    
 	open func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
 												 for recordType:T.Type,
 												 options:CKQuerySubscription.Options? = nil,
@@ -73,6 +91,20 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 			}
 		})
 	}
+    
+    open func deleteSubscription(with id: CKSubscription.ID) async throws -> String {
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            deleteSubscription(with: id) { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
     
     open func deleteSubscription(with id:CKSubscription.ID, then completion:@escaping (Result<String, Error>)->Void) {
             CKMDefault.database.delete(withSubscriptionID: id, completionHandler: { message, error in

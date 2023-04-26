@@ -202,6 +202,21 @@ extension CKMCloudable {
 			.success(let record:CKMRecord) -> The saved record, with correct Object Type, in a Any shell.  Just cast this to it's original type.
 			.failure(let error) an error
 	*/
+    
+    @available(macOS 10.15, *)
+    public func ckSave() async throws -> Any {
+        return try await withCheckedThrowingContinuation { continuation in
+            ckSave() { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+    
 	public func ckSave(then completion:@escaping (Result<Any, Error>)->Void) {
 
             var ckPreparedRecord:CKMPreparedRecord
@@ -289,6 +304,21 @@ extension CKMCloudable {
 	- recordName an iCloud recordName id for fetch
 	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
 	*/
+    
+    @available(macOS 10.15, *)
+    public static func ckLoad(with recordName: String) async throws -> Any {
+        return try await withCheckedThrowingContinuation { continuation in
+            ckLoad(with: recordName) { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+    
 	public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void) {
         
                 // Executar o fetch
@@ -334,7 +364,21 @@ extension CKMCloudable {
             })
         
 	}
-	
+    
+    @available(macOS 10.15, *)
+    public func ckDelete() async throws -> String {
+        return try await withCheckedThrowingContinuation { continuation in
+            ckDelete() { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+    
 	public func ckDelete(then completion:@escaping (Result<String, Error>)->Void) {
 		guard let recordName = self.recordName else { return }
         

@@ -42,6 +42,20 @@ open class CKMPreparedRecord {
 		let new = CKMPreparedRecord.Reference(value: cyclicReferenceBranch, forKey: pendingCyclicReferenceName)
 		pending.append(new)
 	}
+    
+    @available(macOS 10.15, *)
+    open func dispatchPending(for savedRecord: CKRecord) async throws -> CKRecord {
+        return try await withCheckedThrowingContinuation { continuation in
+            dispatchPending(for: savedRecord) { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
 	
 	open func dispatchPending(for savedRecord:CKRecord, then completion:@escaping (Result<CKRecord, Error>)->Void) {
 		// Me atualizar
@@ -83,6 +97,20 @@ open class CKMPreparedRecord {
 		}
 	}
 	
+    @available(macOS 10.15, *)
+    open func updateRecord(with reference: String, in item: CKMPreparedRecord.Reference) async throws -> CKRecord {
+        return try await withCheckedThrowingContinuation { continuation in
+            updateRecord(with: reference, in: item) { result in
+                switch result {
+                case .success(let success):
+                    continuation.resume(returning: success)
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+    
 	open func updateRecord(with reference: String, in item: CKMPreparedRecord.Reference, then completion:@escaping (Result<CKRecord, Error>)->Void) {
 		let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: reference), action: .none)
 		let referenceField = item.pendingCyclicReferenceName
