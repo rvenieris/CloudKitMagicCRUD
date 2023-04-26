@@ -74,6 +74,19 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		})
 	}
     
+    open func deleteSubscription(with id: CKSubscription.ID) async throws -> String {
+         return try await withCheckedThrowingContinuation { continuation in
+             deleteSubscription(with: id) { result in
+                 switch result {
+                 case .success(let success):
+                     continuation.resume(returning: success)
+                 case .failure(let failure):
+                     continuation.resume(throwing: failure)
+                 }
+             }
+         }
+     }
+    
     open func deleteSubscription(with id:CKSubscription.ID, then completion:@escaping (Result<String, Error>)->Void) {
             CKMDefault.database.delete(withSubscriptionID: id, completionHandler: { message, error in
                 if let message = message {
