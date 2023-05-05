@@ -20,7 +20,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	private override init() {
 		super.init()
 		self.resgisterInNotificationCenter()
-		debugPrint("CKNotificationManager started")
 	}
 	
 	open func resgisterInNotificationCenter() {
