@@ -200,8 +200,8 @@ public extension Date {
 /// Check if object Type is Element or Array of Number, String & Date
 func isBasicType(_ value:Any)->Bool {
     let typeDescription = String(reflecting: type(of: value))
-    if typeDescription.hasPrefix("Swift") == false { return false }
-    return typeDescription.contains("Int") || typeDescription.contains("Float") || typeDescription.contains("Double") || typeDescription.contains("String") || typeDescription.contains("Date") || typeDescription.contains("Bool")
+    guard typeDescription.hasPrefix("Swift") || typeDescription.hasPrefix("Foundation") { return false }
+    return typeDescription.hasSuffix("Int") || typeDescription.hasSuffix("Float") || typeDescription.hasSuffix("Double") || typeDescription.hasSuffix("String") || typeDescription.hasSuffix("Date") || typeDescription.hasSuffix("Bool")
 }
 
 
