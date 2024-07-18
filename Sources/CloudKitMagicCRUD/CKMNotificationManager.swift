@@ -42,6 +42,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 												 predicate: NSPredicate? = nil,
 												 alertBody:String? = nil,
                                                  completion: @escaping (Result<CKSubscription, Error>)->Void ) {
+#if !os(tvOS)
+
     
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
 		let predicate = predicate ?? NSPredicate(value: true)
@@ -71,6 +73,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 debugPrint("error in subscription", error)
 			}
 		})
+        #endif
 	}
     
     open func deleteSubscription(with id:CKSubscription.ID, then completion:@escaping (Result<String, Error>)->Void) {
@@ -89,6 +92,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	}
 	
 	open func notifyObserversFor(_ notification: UNNotification) {
+#if !os(tvOS)
+
 		let recordTypeName = notification.request.content.categoryIdentifier
         
 		self.observers.forEach {$0.value.compact()}
@@ -98,6 +103,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 (observer as? CKMRecordObserver)?.onReceive(notification: CKMNotification(from: notification))
 			}
 		}
+        #endif
 	}
 	
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
