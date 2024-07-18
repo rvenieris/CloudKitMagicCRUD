@@ -161,12 +161,12 @@ open class CKMNotification {
     public let sound: UNNotificationSound?
 #endif
     public let launchImageName: String
-//     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
-//    public let userInfo: [AnyHashable : Any]
+    //     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
+    //    public let userInfo: [AnyHashable : Any]
     
     public init(from notification: UNNotification) {
 #if !os(tvOS)
-
+        
         self.category = notification.request.content.categoryIdentifier
         self.date = notification.date
         self.identifier = notification.request.identifier
@@ -178,8 +178,8 @@ open class CKMNotification {
         self.launchImageName = notification.request.content.launchImageName
         
         let userInfo = notification.request.content.userInfo
-//        self.userInfo = userInfo
-
+        //        self.userInfo = userInfo
+        
         let ck = userInfo["ck"] as? [AnyHashable:Any]
         self.userID = ck?["ckuserid"] as? String
         
@@ -187,6 +187,16 @@ open class CKMNotification {
         self.recordID = qry?["rid"] as? String
         self.subscriptionID = qry?["sid"] as? String
         self.zoneID = qry?["zid"] as? String
+#else
+        
+        self.date = Date()
+        self.identifier = ""
+        self.title = ""
+        self.subtitle = ""
+        self.body = ""
+        self.category = ""
+        self.launchImageName = ""
+        
         #endif
     }
 }
