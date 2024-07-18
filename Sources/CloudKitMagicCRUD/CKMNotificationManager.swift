@@ -196,6 +196,12 @@ open class CKMNotification {
         self.body = ""
         self.category = ""
         self.launchImageName = ""
+        self.recordID = nil
+        self.subscriptionID = nil
+        self.zoneID = nil
+        self.recordID = nil
+        self.badge = nil
+
         
         #endif
     }
