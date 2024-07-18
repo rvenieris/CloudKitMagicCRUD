@@ -105,7 +105,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		notifyObserversFor(notification)
 		//		completionHandler(UNNotificationPresentationOptions.badge)
 	}
-	
+#if !os(tvOS)
+
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
 		debugPrint(#function)
 	}
@@ -114,7 +115,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
 		debugPrint(#function)
 	}
-	
+#endif
 }
 
 
@@ -150,12 +151,16 @@ open class CKMNotification {
     public let subtitle: String
     public let body: String
     public let badge: NSNumber?
+#if !os(tvOS)
     public let sound: UNNotificationSound?
+#endif
     public let launchImageName: String
 //     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
 //    public let userInfo: [AnyHashable : Any]
     
     public init(from notification: UNNotification) {
+#if !os(tvOS)
+
         self.category = notification.request.content.categoryIdentifier
         self.date = notification.date
         self.identifier = notification.request.identifier
@@ -176,7 +181,7 @@ open class CKMNotification {
         self.recordID = qry?["rid"] as? String
         self.subscriptionID = qry?["sid"] as? String
         self.zoneID = qry?["zid"] as? String
-        
+        #endif
     }
 }
 
