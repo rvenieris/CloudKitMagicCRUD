@@ -199,7 +199,7 @@ open class CKMNotification {
         self.recordID = nil
         self.subscriptionID = nil
         self.zoneID = nil
-        self.recordID = nil
+        self.userID = nil
         self.badge = nil
 
         
