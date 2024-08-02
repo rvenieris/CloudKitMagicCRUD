@@ -5,8 +5,8 @@
         "package": "CodableExtensions",
         "repositoryURL": "https://github.com/rvenieris/CodableExtensions.git",
         "state": {
-          "branch": "main",
-          "revision": "5698b8fde715219b33042efd898d65a9a48dd73f",
+          "branch": "LoggingImprovements",
+          "revision": "0459047e09315cda67f7360591a08e18fd24ceb1",
           "version": null
         }
       }

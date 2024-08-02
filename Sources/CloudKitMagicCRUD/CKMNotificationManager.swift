@@ -20,7 +20,6 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	private override init() {
 		super.init()
 		self.resgisterInNotificationCenter()
-		debugPrint("CKNotificationManager started")
 	}
 	
 	open func resgisterInNotificationCenter() {
@@ -43,14 +42,16 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 												 predicate: NSPredicate? = nil,
 												 alertBody:String? = nil,
                                                  completion: @escaping (Result<CKSubscription, Error>)->Void ) {
+#if !os(tvOS)
+
     
 		let options = options ?? [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
 		let predicate = predicate ?? NSPredicate(value: true)
-		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
+//		let alertBody = alertBody ?? "\(recordType.ckRecordType): new record posted!"
 		
 		let info = CKSubscription.NotificationInfo()
 		info.alertBody = alertBody
-		info.soundName = "default"
+//		info.soundName = "default"
 		info.category = recordType.ckRecordType
 		info.shouldSendContentAvailable = true
 		info.shouldSendMutableContent = true
@@ -72,6 +73,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 debugPrint("error in subscription", error)
 			}
 		})
+        #endif
 	}
     
     open func deleteSubscription(with id:CKSubscription.ID, then completion:@escaping (Result<String, Error>)->Void) {
@@ -90,6 +92,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	}
 	
 	open func notifyObserversFor(_ notification: UNNotification) {
+#if !os(tvOS)
+
 		let recordTypeName = notification.request.content.categoryIdentifier
         
 		self.observers.forEach {$0.value.compact()}
@@ -99,6 +103,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 (observer as? CKMRecordObserver)?.onReceive(notification: CKMNotification(from: notification))
 			}
 		}
+        #endif
 	}
 	
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
@@ -106,7 +111,8 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 		notifyObserversFor(notification)
 		//		completionHandler(UNNotificationPresentationOptions.badge)
 	}
-	
+#if !os(tvOS)
+
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
 		debugPrint(#function)
 	}
@@ -115,7 +121,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
 		debugPrint(#function)
 	}
-	
+#endif
 }
 
 
@@ -151,12 +157,16 @@ open class CKMNotification {
     public let subtitle: String
     public let body: String
     public let badge: NSNumber?
+#if !os(tvOS)
     public let sound: UNNotificationSound?
+#endif
     public let launchImageName: String
-//     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
-//    public let userInfo: [AnyHashable : Any]
+    //     -  userInfo: [AnyHashable : Any] - A dictionary of custom information associated with the notification.
+    //    public let userInfo: [AnyHashable : Any]
     
     public init(from notification: UNNotification) {
+#if !os(tvOS)
+        
         self.category = notification.request.content.categoryIdentifier
         self.date = notification.date
         self.identifier = notification.request.identifier
@@ -168,8 +178,8 @@ open class CKMNotification {
         self.launchImageName = notification.request.content.launchImageName
         
         let userInfo = notification.request.content.userInfo
-//        self.userInfo = userInfo
-
+        //        self.userInfo = userInfo
+        
         let ck = userInfo["ck"] as? [AnyHashable:Any]
         self.userID = ck?["ckuserid"] as? String
         
@@ -177,7 +187,23 @@ open class CKMNotification {
         self.recordID = qry?["rid"] as? String
         self.subscriptionID = qry?["sid"] as? String
         self.zoneID = qry?["zid"] as? String
+#else
         
+        self.date = Date()
+        self.identifier = ""
+        self.title = ""
+        self.subtitle = ""
+        self.body = ""
+        self.category = ""
+        self.launchImageName = ""
+        self.recordID = nil
+        self.subscriptionID = nil
+        self.zoneID = nil
+        self.userID = nil
+        self.badge = nil
+
+        
+        #endif
     }
 }
 
