@@ -519,3 +519,126 @@ extension CKMCloudable {
         
     }
 }
+
+/// New async/await implementations
+extension CKMCloudable {
+    public static func ckLoadNext(cursor: CKQueryOperation.Cursor,
+                                  limit: Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        return await Self.ckGLoadAll(cursor: cursor, limit: limit)
+    }
+    
+        ///
+        /// # Read all records from a type, limited on *limit* maxRecords.
+        /// - Parameters:
+        ///   - predicate : A NSPredicate for query constraints
+        ///   - sortedBy   :  a array of  SortDescriptors
+        ///   - limit          :  max number of result records, or *CKQueryOperation.maximumResults* if ommited.
+        ///
+        /// - Returns          :
+        ///    - a (records, queryCursor)  in a completion handler where:
+        ///
+        ///       - records          :  contais a type objects array [T] encapsulated in a [Any]
+        ///       - queryCursor  : contains a cursor for next page
+        ///
+        ///    - or
+        ///       - an Error, if something goes wrong.
+    
+    public static func ckLoadAll(predicate: NSPredicate = NSPredicate(value: true),
+                                 sortedBy sortKeys:[CKSortDescriptor] = [],
+                                 limit: Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        
+        
+        var stillQuerying = true
+        var cursor: CKMCursor? = nil
+        
+        var allRecords: [Self] = []
+        var allPartialErrors: [CKMRecordName:Error] = [:]
+        
+        while stillQuerying {
+            
+            let result = await Self.ckGLoadAll(predicate: predicate, sortedBy: sortKeys, cursor: cursor, limit: limit)
+            
+            switch result {
+                case .success(let (records, queryCursor, partialErrors)):
+                    if let records = records as? [Self] {
+                        allRecords.append(contentsOf: records)
+                    }
+                    allPartialErrors.merge(partialErrors) { (current, _) in current }
+                    cursor = queryCursor
+                    stillQuerying = cursor != nil
+                    
+                case .failure(let error):
+                    stillQuerying = false
+                    return .failure(error)
+            }
+        }
+        
+        
+        
+        let finalAsyncResult: CKMRecordAsyncResult = .success((records: allRecords, queryCursor: nil, partialErrors: allPartialErrors))
+        
+        return finalAsyncResult
+    }
+    
+    private static func ckGLoadAll(predicate: NSPredicate = NSPredicate(value: true),
+                                   sortedBy sortKeys: [CKSortDescriptor] = [],
+                                   cursor: CKQueryOperation.Cursor? = nil,
+                                   limit: Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+        
+        var records: [Self] = []
+        var ckRecords: [CKRecord] = []
+        var ckErrors: [CKMRecordName: Error] = [:]
+            //Preparara a query
+        
+        let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
+        query.sortDescriptors = sortKeys.ckSortDescriptors
+        
+        do {
+            var result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+            if let cursor {
+                result = try await CKMDefault.database.records(continuingMatchFrom: cursor)
+            } else {
+                result = try await CKMDefault.database.records(matching: query, resultsLimit: limit)
+            }
+//            print(">>>> \(result.matchResults)")
+            result.matchResults.forEach { matchResult in
+                switch matchResult.1 {
+                    case .success(let ckRecord):
+                        ckRecords.append(ckRecord)
+                        do {
+                            let item = try Self.load(from: ckRecord.asDictionary)
+                            records.append(item)
+                        } catch {
+                            ckErrors[matchResult.0.recordName] = error
+                        }
+                    case .failure(let error):
+                        ckErrors[matchResult.0.recordName] = error
+                }
+            }
+            
+            CKMDefault.addToCache(ckRecords)
+            
+            return .success((records: records, queryCursor: result.queryCursor, partialErrors: ckErrors))
+            
+            
+        } catch {
+            print(">>> failure \(error)")
+            return .failure(error)
+        }
+    }
+    
+    public func ckSave() async throws -> Self {
+            let ckPreparedRecord = try       self.prepareCKRecord()
+            let record           = try await CKMDefault.database.save(ckPreparedRecord.record)
+            let ckRecord         = try await ckPreparedRecord.dispatchPending(for: record)  // Resolver as pendências, se houver
+            let object           = try       Self.load(from: ckRecord.asDictionary)
+        return object
+    }
+    
+    public func ckSave(nonRecursivelyWithPreparedCKRecord preparedCKRecord: CKRecord) async throws -> Self {
+        let record           = try await CKMDefault.database.save(preparedCKRecord)
+        let object           = try       Self.load(from: record.asDictionary)
+        return object
+    }
+}
+

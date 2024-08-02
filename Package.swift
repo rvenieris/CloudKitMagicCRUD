@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -8,7 +8,7 @@ let package = Package(
     name: "CloudKitMagicCRUD",
 	platforms: [
 		.iOS(.v12),
-		.tvOS(.v10),
+		.tvOS(.v15),
 		.watchOS(.v5),
 		.macOS(.v10_14)
 	],

@@ -9,6 +9,14 @@
 import CloudKit
 import CodableExtensions
 
+public typealias CKMCursor = CKQueryOperation.Cursor
+public typealias CKMRecordName = String
+public typealias CKRecordAsyncResult = (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)],
+                                        queryCursor: CKQueryOperation.Cursor?)
+public typealias CKMRecordAsyncResult = (Result<(records: [Any],
+                                                 queryCursor: CKMCursor?,
+                                                 partialErrors: [CKMRecordName:Error]), Error>)
+
 extension CKRecord {
 	public var asDictionary:[String:Any] {
 		var result:[String:Any] = [:]
@@ -244,3 +252,66 @@ public extension Optional {
 		return Wrapped.self
 	}
 }
+
+extension CKMPreparedRecord {
+    
+    public func dispatchPending(for savedRecord: CKRecord) async throws -> CKRecord {
+        // Me atualizar
+        self.record = savedRecord
+        self.objectSaving.recordName = record.recordID.recordName
+        CKMDefault.addToCache(record)
+        
+        // Verificar se tá tudo bem com o recordName (unwrap)
+        guard let _ = objectSaving.recordName else {
+            throw PrepareRecordError.CannotDispatchPendingWithoutSavedRecord("Object \(objectSaving) must have a recordName")
+        }
+        
+        // checar se há pendências
+        guard !pending.isEmpty else { return record }
+        
+        // Se existem pendências,
+        for item in pending {
+            // Salva cada uma delas
+            let savedBranchRecord = try await item.cyclicReferenceBranch.ckSave()
+            
+            guard let referenceID = savedBranchRecord.recordName else {
+                throw PrepareRecordError.ErrorSavingReferenceObject("\(item.pendingCyclicReferenceName) in \(self.record.recordType) - Record saved without reference")
+            }
+            // Ao salvar faz o update do record referenciado
+            if let ckRecord = try await self.updateRecord(with: referenceID, in: item) {
+                return ckRecord
+            }
+            
+        }
+        return self.record
+    }
+    
+    public func updateRecord(with reference: String, in item: CKMPreparedRecord.Reference) async throws -> CKRecord? {
+        let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: reference), action: .none)
+        let referenceField = item.pendingCyclicReferenceName
+        // if item is Reference_Array
+        if var referenceArray = self.record.value(forKey: referenceField) as? [CKRecord.Reference] {
+            referenceArray.append(reference)
+            self.record.setValue(referenceArray, forKey: referenceField)
+        } else {
+            // if item is single Reference
+            self.record.setValue(reference, forKey: referenceField)
+        }
+        
+        // Se acabaram as pendências
+        if self.allPendingValuesFilled {
+            // Atualiza o CKRecord no BD, e completa com o resultado
+            let record = try await CKMDefault.database.save(self.record)
+            CKMDefault.addToCache(record)
+            return record
+        }
+        return nil
+        
+    }
+    
+    enum PrepareRecordError: Swift.Error {
+        case CannotDispatchPendingWithoutSavedRecord(String)
+        case ErrorSavingReferenceObject(String)
+    }
+}
+
