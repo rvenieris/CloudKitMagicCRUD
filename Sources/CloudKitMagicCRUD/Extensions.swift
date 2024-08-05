@@ -254,6 +254,7 @@ public extension Optional {
 	}
 }
 
+@available(iOS 13.0.0, *)
 extension CKMPreparedRecord {
     
     public func dispatchPending(for savedRecord: CKRecord) async throws -> CKRecord {

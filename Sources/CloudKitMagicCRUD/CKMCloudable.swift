@@ -521,6 +521,7 @@ extension CKMCloudable {
 }
 
 /// New async/await implementations
+@available(iOS 13.0.0, *)
 extension CKMCloudable {
     @available(iOS 15.0, *)
     public static func ckLoadNext(cursor: CKQueryOperation.Cursor,
