@@ -643,5 +643,48 @@ extension CKMCloudable {
         let object           = try       Self.load(from: record.asDictionary)
         return object
     }
+    
+    
+   
+    public static func ckLoad(with recordName: String) async throws -> Self {
+        
+                // Executar o fetch
+            
+                // try get from cache
+            if let record = CKMDefault.getFromCache(recordName) {
+                do {
+                        //                let result:Self = try Self.ckLoad(from: record)
+                    let result:Self = try Self.load(from: record.asDictionary)
+                    return result
+                } catch {
+                    
+                    throw CRUDError.cannotMapRecordToObject
+                }
+            }
+            
+            let record = try await CKMDefault.database.record(for: CKRecord.ID(recordName: recordName))
+            
+            do {
+                CKMDefault.addToCache(record)
+                let result: Self = try Self.load(from: record)
+                return result
+            } catch {
+                CKMDefault.removeFromCache(record.recordID.recordName)
+                throw CRUDError.cannotMapRecordToObject
+            }
+                // else get from database
+            
+        
+    }
+    
+    public func ckDelete() async throws -> CKRecord.ID {
+        guard let recordName = self.recordName else { throw CRUDError.invalidRecordID }
+        
+        let recordID = try await CKMDefault.database.deleteRecord(withID: CKRecord.ID(recordName: recordName))
+        CKMDefault.removeFromCache(recordName)
+        return recordID
+       
+    }
+    
 }
 
