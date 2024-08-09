@@ -40,7 +40,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	}
     
     @available(iOS 13.0, *)
-    public static func notificationHandler(userInfo: [AnyHashable : Any]) async {
+    public static func notificationHandler(userInfo: [AnyHashable : Any]) {
 
 
         let aps = userInfo["aps"] as? [String: Any]
