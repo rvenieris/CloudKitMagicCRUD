@@ -11,11 +11,14 @@
 import UIKit
 import CloudKit
 import UserNotifications
+import Combine
 
 open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	open var observers:[CKRecord.RecordType:NSPointerArray] = [:]
     public static var shared = { CKMNotificationManager() }()
-	
+    @available(iOS 13.0, *)
+    static let receivedNotificationPublisher = PassthroughSubject<CKMNotification, Never>()
+    
 	
 	private override init() {
 		super.init()
@@ -35,7 +38,28 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 			}
 		})
 	}
-	
+    
+    @available(iOS 13.0, *)
+    func notificationHandler(userInfo: [AnyHashable : Any]) async {
+        let ckNotification = userInfo["ck"] as? [String: Any]
+        let query = ckNotification?["qry"] as? [String: Any]
+
+        let aps = userInfo["aps"] as? [String: Any]
+        let category = aps?["category"] as? String
+
+        let ck = userInfo["ck"] as? [AnyHashable: Any]
+        let userID = ck?["ckuserid"] as? String
+        let qry = ck?["qry"] as? [AnyHashable: Any]
+        let recordID = qry?["rid"] as? String
+        let subscriptionID = qry?["sid"] as? String
+        let zoneID = qry?["zid"] as? String
+                
+                
+        Self.receivedNotificationPublisher.send(CKMNotification(category: category ?? "unknown", recordID: recordID, subscriptionID: subscriptionID, zoneID: zoneID, userID: userID, date: Date(), identifier: "", title: "", subtitle: "", body: "", badge: nil, sound: nil, launchImageName: ""))
+                
+            
+        
+    }
 	open func createNotification<T:CKMCloudable>(to recordObserver:CKMRecordObserver,
 												 for recordType:T.Type,
 												 options:CKQuerySubscription.Options? = nil,
@@ -204,6 +228,22 @@ open class CKMNotification {
 
         
         #endif
+    }
+    
+    public init(category: String, recordID: String? = nil, subscriptionID: String? = nil, zoneID: String? = nil, userID: String? = nil, date: Date, identifier: String, title: String, subtitle: String, body: String, badge: NSNumber? = nil, sound: UNNotificationSound? = nil, launchImageName: String) {
+        self.category = category
+        self.recordID = recordID
+        self.subscriptionID = subscriptionID
+        self.zoneID = zoneID
+        self.userID = userID
+        self.date = date
+        self.identifier = identifier
+        self.title = title
+        self.subtitle = subtitle
+        self.body = body
+        self.badge = badge
+        self.sound = sound
+        self.launchImageName = launchImageName
     }
 }
 
