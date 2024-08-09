@@ -17,7 +17,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	open var observers:[CKRecord.RecordType:NSPointerArray] = [:]
     public static var shared = { CKMNotificationManager() }()
     @available(iOS 13.0, *)
-    static let receivedNotificationPublisher = PassthroughSubject<CKMNotification, Never>()
+    public static let receivedNotificationPublisher = PassthroughSubject<CKMNotification, Never>()
     
 	
 	private override init() {
