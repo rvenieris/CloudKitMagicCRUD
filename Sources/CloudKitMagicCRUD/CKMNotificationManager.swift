@@ -40,7 +40,7 @@ open class CKMNotificationManager: NSObject, UNUserNotificationCenterDelegate {
 	}
     
     @available(iOS 13.0, *)
-    func notificationHandler(userInfo: [AnyHashable : Any]) async {
+    open func notificationHandler(userInfo: [AnyHashable : Any]) async {
         let ckNotification = userInfo["ck"] as? [String: Any]
         let query = ckNotification?["qry"] as? [String: Any]
 
