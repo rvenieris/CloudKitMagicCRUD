@@ -53,7 +53,7 @@ extension CKRecord {
 			else if let value = self.value(forKey: key) as? [CKAsset] {
 				result[key] = value.map{ $0.fileURL?.contentAsData }
 			} else {
-				result[key] = self.value(forKey: key)
+                result[key] = self.value(forKey: key.withoutObservableUnderscore)
 			}
 		}
 		return result
@@ -317,3 +317,14 @@ extension CKMPreparedRecord {
     }
 }
 
+extension CKRecord.FieldKey {
+    var withoutObservableUnderscore: CKRecord.FieldKey {
+        var key = self
+        
+        if key.first == "_" {
+            key.removeFirst()
+            return key
+        }
+        return self
+    }
+}
