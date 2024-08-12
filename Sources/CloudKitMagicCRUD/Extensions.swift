@@ -53,7 +53,7 @@ extension CKRecord {
 			else if let value = self.value(forKey: key) as? [CKAsset] {
 				result[key] = value.map{ $0.fileURL?.contentAsData }
 			} else {
-                result[key] = self.value(forKey: key.withObservableUnderscore)
+                result[key] = self.value(forKey: key)
 			}
 		}
 		return result
@@ -314,17 +314,5 @@ extension CKMPreparedRecord {
     enum PrepareRecordError: Swift.Error {
         case CannotDispatchPendingWithoutSavedRecord(String)
         case ErrorSavingReferenceObject(String)
-    }
-}
-
-extension CKRecord.FieldKey {
-    var withObservableUnderscore: CKRecord.FieldKey {
-        var key = self
-        
-        if !(key.first == "_") {
-            key = "_" + key
-            return key
-        }
-        return key
     }
 }
