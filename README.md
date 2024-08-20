@@ -176,6 +176,61 @@ protocol CKMRecord {
 }
 ```
 
+### Silent Notifications
+
+New silent notifications were introduced to CloudKitMagic. To use them, you must setup a AppDelegate first.
+
+```swift
+class AppDelegate: NSObject, UIApplicationDelegate {
+       
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        application.registerForRemoteNotifications()
+        return true
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) async -> UIBackgroundFetchResult {
+        CKMNotificationManager.notificationHandler(userInfo: userInfo)
+        return .newData
+    }
+    
+}
+```
+It can be called using a @UIApplicationDelegateAdaptor in SwiftUI.
+
+```swift
+struct ExampleApp: App {
+    
+    @UIApplicationDelegateAdaptor var appDelegate: AppDelegate
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+To catch the notifications sent by your subscriptions, you must call a .onReceive with the package's publisher on it.
+
+```swift
+.onReceive(CKMNotificationManager.receivedNotificationPublisher, perform: { notification in
+
+	// deal with your notification here
+
+})
+```
+
+With silent notifications, only category, recordID, subscriptionID, zoneID and userID are available. It is strongly suggested to used only the category and the recordID.
+
+Also, don't forget to have the background modes capability added into the project, with background fetch and remote notifications enabled. 
+
+```xml
+<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+```
 
 
 As this packages uses my also created CodableExtensions package, the follow functions and variables are also avaliable.
