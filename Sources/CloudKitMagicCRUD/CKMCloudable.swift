@@ -114,21 +114,22 @@ extension CKMCloudable {
 		let preparedRecord = CKMPreparedRecord(for: self, in:ckRecord)
 		let mirror = Mirror(reflecting: self)
 		
-		for field in mirror.children{
+		for field in mirror.children {
 			// Trata valores à partir dde um mirroing
 			
 			var value = field.value
 			guard !"\(value)".elementsEqual("nil") else {continue} // se valor nil nem perde tempo
-			guard let key = field.label else { fatalError("Type \(mirror) have field without label.") }
+            guard let key = field.label?.removingFirstUnderscore else { fatalError("Type \(mirror) have field without label.") }
+            guard key != "$observationRegistar" else {continue}
 			
 			//MARK: Tratamento de todos os tipos possíveis
 			
-			if field.label?.elementsEqual("recordName") ?? false
-				|| field.label?.elementsEqual("createdBy") ?? false
-				|| field.label?.elementsEqual("createdAt") ?? false
-				|| field.label?.elementsEqual("modifiedBy") ?? false
-				|| field.label?.elementsEqual("modifiedAt") ?? false
-				|| field.label?.elementsEqual("changeTag") ?? false {
+			if     key.elementsEqual("recordName")
+				|| key.elementsEqual("createdBy")
+                || key.elementsEqual("createdAt")
+                || key.elementsEqual("modifiedBy")
+				|| key.elementsEqual("modifiedAt")
+				|| key.elementsEqual("changeTag")    {
 				// do nothing
 			}
 			
@@ -248,7 +249,7 @@ extension CKMCloudable {
 	- returns: a (Result<Any, Error>) where Any contais a type objects array [T] in a completion handler
 	*/
     @available(*, deprecated, message: "Use the new version with custom limit and cursor")
-	public static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor] = [], predicate:NSPredicate = NSPredicate(value:true), then completion:@escaping (Result<Any, Error>)->Void) {
+	public static func ckLoadAll(sortedBy sortKeys:[CKSortDescriptor] = [], predicate:NSPredicate = NSPredicate(value:true), then completion:@escaping (Result<Any, Error>)->Void ) {
         
                 //Preparara a query
             let query = CKQuery(recordType: Self.ckRecordType, predicate: predicate)
@@ -289,12 +290,13 @@ extension CKMCloudable {
 	- recordName an iCloud recordName id for fetch
 	- returns: a (Result<Any, Error>) where Any contais a CKMRecord type object  in a completion handler
 	*/
-	public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void) {
+    public static func ckLoad(with recordName: String , then completion:@escaping (Result<Any, Error>)->Void, avoidCache:Bool = false) {
         
                 // Executar o fetch
             
                 // try get from cache
-            if let record = CKMDefault.getFromCache(recordName) {
+            if !avoidCache,
+               let record = CKMDefault.getFromCache(recordName) {
                 do {
                         //				let result:Self = try Self.ckLoad(from: record)
                     let result:Self = try Self.load(from: record.asDictionary)

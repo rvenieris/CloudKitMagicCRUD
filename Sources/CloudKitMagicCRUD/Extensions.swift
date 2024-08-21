@@ -139,10 +139,16 @@ public extension Optional where Wrapped == String {
 }
 
 public extension String {
-	func deleting(suffix: String) -> String {
-		guard self.hasSuffix(suffix) else { return self }
-		return String(self.dropLast(suffix.count))
-	}
+    func deleting(suffix: String) -> String {
+        guard self.hasSuffix(suffix) else { return self }
+        return String(self.dropLast(suffix.count))
+    }
+    
+    var removingFirstUnderscore: String {
+        guard self.hasPrefix("_") else { return self }
+        return String(self.dropFirst())
+    }
+    
 }
 
 
