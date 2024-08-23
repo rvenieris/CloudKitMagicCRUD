@@ -120,7 +120,7 @@ extension CKMCloudable {
 			var value = field.value
 			guard !"\(value)".elementsEqual("nil") else {continue} // se valor nil nem perde tempo
             guard let key = field.label?.removingFirstUnderscore else { fatalError("Type \(mirror) have field without label.") }
-            guard key != "$observationRegistar" else {continue}
+            guard key != "$observationRegistrar" else {continue}
 			
 			//MARK: Tratamento de todos os tipos possíveis
 			
