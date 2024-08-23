@@ -229,7 +229,8 @@ extension CKMCloudable {
                         switch result {
                             case .success(let record):
                                 do {
-                                    let object = try Self.load(from: record.asDictionary)
+                                    let dictionary = Self.addObservableUnderscore(record: record)
+                                    let object = try Self.load(from: dictionary)
                                     completion(.success(object))
                                 } catch {
                                     completion(.failure(CRUDError.cannotMapRecordToObject))
@@ -299,7 +300,9 @@ extension CKMCloudable {
                let record = CKMDefault.getFromCache(recordName) {
                 do {
                         //				let result:Self = try Self.ckLoad(from: record)
-                    let result:Self = try Self.load(from: record.asDictionary)
+                    
+                    let dictionary = Self.addObservableUnderscore(record: record)
+                    let result:Self = try Self.load(from: dictionary)
                     completion(.success(result))
                 } catch {
                     completion(.failure(CRUDError.cannotMapRecordToObject))
@@ -321,7 +324,9 @@ extension CKMCloudable {
                 if let record = record {
                     do {
                         CKMDefault.addToCache(record)
-                        let result:Self = try Self.load(from: record)
+                        
+                        let dictionary = Self.addObservableUnderscore(record: record)
+                        let result:Self = try Self.load(from: dictionary)
                         completion(.success(result))
                         return
                     } catch {
@@ -336,6 +341,16 @@ extension CKMCloudable {
             })
         
 	}
+    
+    public static func addObservableUnderscore(record: CKRecord) -> [String: Any] {
+        var dictionary = record.asDictionary
+        
+        for key in dictionary.keys {
+            dictionary["_" + key] = dictionary[key]
+        }
+        
+        return dictionary
+    }
 	
 	public func ckDelete(then completion:@escaping (Result<String, Error>)->Void) {
 		guard let recordName = self.recordName else { return }
@@ -378,8 +393,8 @@ extension CKMCloudable {
 			//TODO: Trata criação de objeto com ciclo
 			fatalError("Cannot have cycle loading object... yet")
 		} // else
-		
-		let result:Self = try Self.load(from: record.asDictionary)
+        let dictionary = Self.addObservableUnderscore(record: record)
+		let result:Self = try Self.load(from: dictionary)
 		return result
 	}
 	
@@ -493,7 +508,9 @@ extension CKMCloudable {
             
             operation.recordFetchedBlock = {record in
                 ckRecords.append(record)
-                if let item = try? Self.load(from: record.asDictionary) {
+                
+                let dictionary = Self.addObservableUnderscore(record: record)
+                if let item = try? Self.load(from: dictionary) {
                     records.append(item)
                 }
             }
@@ -611,7 +628,8 @@ extension CKMCloudable {
                         case .success(let ckRecord):
                             ckRecords.append(ckRecord)
                             do {
-                                let item = try Self.load(from: ckRecord.asDictionary)
+                                let dictionary = Self.addObservableUnderscore(record: ckRecord)
+                                let item = try Self.load(from: dictionary)
                                 records.append(item)
                             } catch {
                                 ckErrors[matchResult.0.recordName] = error
@@ -636,7 +654,10 @@ extension CKMCloudable {
             let ckPreparedRecord = try       self.prepareCKRecord()
             let record           = try await CKMDefault.database.save(ckPreparedRecord.record)
             let ckRecord         = try await ckPreparedRecord.dispatchPending(for: record)  // Resolver as pendências, se houver
-            let object           = try       Self.load(from: ckRecord.asDictionary)
+        
+            let dictionary = Self.addObservableUnderscore(record: ckRecord)
+        
+            let object           = try       Self.load(from: dictionary)
         return object
     }
     
@@ -656,7 +677,8 @@ extension CKMCloudable {
             if let record = CKMDefault.getFromCache(recordName) {
                 do {
                         //                let result:Self = try Self.ckLoad(from: record)
-                    let result:Self = try Self.load(from: record.asDictionary)
+                    let dictionary = Self.addObservableUnderscore(record: record)
+                    let result:Self = try Self.load(from: dictionary)
                     return result
                 } catch {
                     
