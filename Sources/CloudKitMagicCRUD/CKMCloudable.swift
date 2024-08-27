@@ -112,8 +112,9 @@ extension CKMCloudable {
 			return CKRecord(recordType: Self.ckRecordType)
 		}()
 		let preparedRecord = CKMPreparedRecord(for: self, in:ckRecord)
+        
 		let mirror = Mirror(reflecting: self)
-		
+        
 		for field in mirror.children {
 			// Trata valores à partir dde um mirroing
 			
@@ -155,21 +156,23 @@ extension CKMCloudable {
 				if let reference = value.referenceInCacheOrNull {
 					ckRecord.setValue(reference, forKey: key)
 				}
-				// se não, se meu  recordName tá preenchido, salva a dependencia e segue
-				else if let _ = self.recordName {
-					if let reference = value.referenceSavingRecordIfNull {
-						ckRecord.setValue(reference, forKey: key)
-					} else {
-						debugPrint("----------------------------------")
-						debugPrint("Cannot save record for \(key) in \(Self.ckRecordType)")
-						dump(value)
-						debugPrint("----------------------------------")
-					}
-				}
+				
 				/// Se meu recordName não tá preenchido e tem referência cíclica, guarda o objeto para salvar depois
 				else if value.haveCycle(with: self) {
 					preparedRecord.add(value: value, forKey: key)
 				}
+                
+                // se não, salva o filho e coloca a referência dele em mim
+                else {
+                    if let reference = value.referenceSavingRecordIfNull {
+                        ckRecord.setValue(reference, forKey: key)
+                    } else {
+                        debugPrint("----------------------------------")
+                        debugPrint("Cannot save record for \(key) in \(Self.ckRecordType)")
+                        dump(value)
+                        debugPrint("----------------------------------")
+                    }
+                }
 			}
 			
 			// se campo é [CKCloudable] Pega a referência
