@@ -190,6 +190,14 @@ extension CKMCloudable {
 				ckRecord.setValue(references, forKey: key)
 				
 			}
+            
+            else if let value = field.value as? any RawRepresentable {
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            else if let value = field.value as? [any RawRepresentable] {
+                ckRecord.setValue(value, forKey: key)
+            }
 			
 			else {
 				debugPrint("WARNING: Untratable type\n    \(key): \(type(of: field.value)) = \(field.value)")

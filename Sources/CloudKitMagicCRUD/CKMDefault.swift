@@ -47,7 +47,7 @@ open class CKMDefault {
     private static var cache:[String:CacheItem] = [:]
     
     /// Time in seconds for cache expiration
-    private static var cacheExpirationTime:TimeInterval = {
+    public static var cacheExpirationTime:TimeInterval = {
         #if DEBUG
         return .infinity
         #else
