@@ -363,6 +363,17 @@ extension CKMCloudable {
         return dictionary
     }
 	
+    @available(iOS 13.0.0, *)
+    public static func addObservableUnderscoreAsynchronously(record: CKRecord) async -> [String: Any] {
+        var dictionary = await record.asDictionary()
+        
+        for key in dictionary.keys {
+            dictionary["_" + key] = dictionary[key]
+        }
+        
+        return dictionary
+    }
+    
 	public func ckDelete(then completion:@escaping (Result<String, Error>)->Void) {
 		guard let recordName = self.recordName else { return }
         
@@ -578,7 +589,7 @@ extension CKMCloudable {
     @available(iOS 15.0, *)
     public static func ckLoadAll(predicate: NSPredicate = NSPredicate(value: true),
                                  sortedBy sortKeys:[CKSortDescriptor] = [],
-                                 limit: Int = CKQueryOperation.maximumResults) async -> CKMRecordAsyncResult {
+                                 limit: Int = CKQueryOperation.maximumResults) async throws -> [Self] {
         
         
         var stillQuerying = true
@@ -593,6 +604,7 @@ extension CKMCloudable {
             
             switch result {
                 case .success(let (records, queryCursor, partialErrors)):
+                    
                     if let records = records as? [Self] {
                         allRecords.append(contentsOf: records)
                     }
@@ -602,15 +614,12 @@ extension CKMCloudable {
                     
                 case .failure(let error):
                     stillQuerying = false
-                    return .failure(error)
+                    throw error
             }
         }
         
         
-        
-        let finalAsyncResult: CKMRecordAsyncResult = .success((records: allRecords, queryCursor: nil, partialErrors: allPartialErrors))
-        
-        return finalAsyncResult
+        return allRecords
     }
         @available(iOS 15.0, *)
         private static func ckGLoadAll(predicate: NSPredicate = NSPredicate(value: true),
@@ -634,12 +643,12 @@ extension CKMCloudable {
                     result = try await CKMDefault.database.records(matching: query, resultsLimit: limit)
                 }
                 //            print(">>>> \(result.matchResults)")
-                result.matchResults.forEach { matchResult in
+                for matchResult in result.matchResults {
                     switch matchResult.1 {
                         case .success(let ckRecord):
                             ckRecords.append(ckRecord)
                             do {
-                                let dictionary = Self.addObservableUnderscore(record: ckRecord)
+                                let dictionary = await Self.addObservableUnderscoreAsynchronously(record: ckRecord)
                                 let item = try Self.load(from: dictionary)
                                 records.append(item)
                             } catch {
@@ -666,7 +675,7 @@ extension CKMCloudable {
             let record           = try await CKMDefault.database.save(ckPreparedRecord.record)
             let ckRecord         = try await ckPreparedRecord.dispatchPending(for: record)  // Resolver as pendências, se houver
         
-            let dictionary = Self.addObservableUnderscore(record: ckRecord)
+            let dictionary = await Self.addObservableUnderscoreAsynchronously(record: ckRecord)
         
             let object           = try       Self.load(from: dictionary)
         return object
@@ -688,7 +697,7 @@ extension CKMCloudable {
             if let record = CKMDefault.getFromCache(recordName) {
                 do {
                         //                let result:Self = try Self.ckLoad(from: record)
-                    let dictionary = Self.addObservableUnderscore(record: record)
+                    let dictionary = await Self.addObservableUnderscoreAsynchronously(record: record)
                     let result:Self = try Self.load(from: dictionary)
                     return result
                 } catch {

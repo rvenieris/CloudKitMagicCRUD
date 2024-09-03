@@ -18,6 +18,56 @@ public typealias CKMRecordAsyncResult = (Result<(records: [Any],
                                                  partialErrors: [CKMRecordName:Error]), Error>)
 
 extension CKRecord {
+    
+    @available(iOS 13.0.0, *)
+    func asDictionary() async -> [String: Any] {
+        var result:[String:Any] = [:]
+        result["recordName"] = self.recordID.recordName
+        result["createdBy"] = self.creatorUserRecordID?.recordName
+        result["createdAt"] = self.creationDate
+        result["modifiedBy"] = self.lastModifiedUserRecordID?.recordName
+        result["modifiedAt"] = self.modificationDate
+        result["changeTag"] = self.recordChangeTag
+
+        
+        for key in self.allKeys() {
+            
+            // Se valor é Date
+            if let value = self.value(forKey: key) as? Date {
+                result[key] = value.timeIntervalSinceReferenceDate
+            }
+            else if let value = self.value(forKey: key) as? [Date] {
+                result[key] = value.map{$0.timeIntervalSinceReferenceDate}
+            }
+
+            // Se o cara for uma referência para outro objeto, pegar o outro objeto e transformar para dicionario
+            else if let value = self.value(forKey: key) as? CKRecord.Reference {
+                result[key] = await value.asyncLoad()
+            }
+            else if let value = self.value(forKey: key) as? [CKRecord.Reference] {
+                var records: [[String: Any]] = []
+                for v in value {
+                    let dict = await v.asyncLoad()
+                    if let dict {
+                        records.append(dict)
+                    }
+                }
+                result[key] = records
+            }
+                
+            // Se o cara for um Asset converter para Data
+            else if let value = self.value(forKey: key) as? CKAsset {
+                result[key] = value.fileURL?.contentAsData
+            }
+            else if let value = self.value(forKey: key) as? [CKAsset] {
+                result[key] = value.map{ $0.fileURL?.contentAsData }
+            } else {
+                result[key] = self.value(forKey: key)
+            }
+        }
+        return result
+    }
+    
 	public var asDictionary:[String:Any] {
 		var result:[String:Any] = [:]
 		result["recordName"] = self.recordID.recordName
@@ -114,6 +164,28 @@ extension CKRecord.Reference {
 		CKMDefault.semaphore.wait()
 		return result
 	}
+    
+    @available(iOS 13.0.0, *)
+    func asyncLoad() async -> [String: Any]?  {
+        let recordName: String = self.recordID.recordName
+        // Executar o fetch
+        
+        
+        if let record = CKMDefault.getFromCache(recordName) {
+            if record.haveCycle() {
+                // TODO: tratar criação de objeto com ciclo
+                fatalError("Cannot have cycle in object... yet.")
+            }
+            return await record.asDictionary()
+        }
+    
+        let record = try? await CKMDefault.database.record(for: CKRecord.ID(recordName: recordName))
+        if let record {
+            return await record.asDictionary()
+        }
+        return nil
+        
+    }
 }
 
 public extension CKAsset {
