@@ -92,7 +92,145 @@ extension CKMCloudable {
 		return savedReference
 		
 	}
+    
+    @available(iOS 13.0.0, *)
+    public func saveAndGetReferenceForRecord() async -> CKRecord.Reference? {
+        if let reference = self.referenceInCacheOrNull {
+            return reference
+        }
+        // else
+        var savedReference:CKRecord.Reference? = nil
+        
+        // Inicio assincrono
+        
+        do {
+            let record = try await self.ckSave()
+            savedReference = record.reference
+            return savedReference
+        }
+        catch {
+            debugPrint(error)
+            return nil
+        }
+        
+    }
 	
+    @available(iOS 13.0.0, *)
+    public func prepare() async throws -> CKMPreparedRecord {
+        
+        var ckRecord: CKRecord = CKRecord(recordType: Self.ckRecordType)
+        
+        if let recordName = self.recordName {
+            
+            let record = try? await CKMDefault.database.record(for: CKRecord.ID(recordName: recordName))
+          
+            if let record {
+                ckRecord = record
+            }
+            else {
+                ckRecord = CKRecord(recordType: Self.ckRecordType, recordID: CKRecord.ID(recordName: recordName))
+            }
+        }
+        
+ 
+        
+        
+        let preparedRecord = CKMPreparedRecord(for: self, in:ckRecord)
+        
+        let mirror = Mirror(reflecting: self)
+        
+        for field in mirror.children {
+            // Trata valores à partir dde um mirroing
+            
+            var value = field.value
+            guard !"\(value)".elementsEqual("nil") else {continue} // se valor nil nem perde tempo
+            guard let key = field.label?.removingFirstUnderscore else { fatalError("Type \(mirror) have field without label.") }
+            guard key != "$observationRegistrar" else {continue}
+            
+            //MARK: Tratamento de todos os tipos possíveis
+            
+            if     key.elementsEqual("recordName")
+                || key.elementsEqual("createdBy")
+                || key.elementsEqual("createdAt")
+                || key.elementsEqual("modifiedBy")
+                || key.elementsEqual("modifiedAt")
+                || key.elementsEqual("changeTag")    {
+                // do nothing
+            }
+            
+            // Se o campo é um básico (Numero, String, Date ou Array desses elementos)
+            else if  isBasicType(field.value) {
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            // Se o campo é Data ou [Data], converte pra Asset ou [Asset]
+            else if let data = value as? Data {
+                value = CKAsset(data: data)
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            else if let datas = value as? [Data] {
+                value = datas.map {CKAsset(data: $0)}
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            // se campo é CKCloudable, pega a referência
+            else if let value = (field.value as AnyObject) as? CKMCloudable {
+                // Se a referência não está com recordName nulo, tá tudo bem.
+                if let reference = value.referenceInCacheOrNull {
+                    ckRecord.setValue(reference, forKey: key)
+                }
+                
+                /// Se meu recordName não tá preenchido e tem referência cíclica, guarda o objeto para salvar depois
+                else if value.haveCycle(with: self) {
+                    preparedRecord.add(value: value, forKey: key)
+                }
+                
+                // se não, salva o filho e coloca a referência dele em mim
+                else {
+                    if let reference = await value.saveAndGetReferenceForRecord() {
+                        ckRecord.setValue(reference, forKey: key)
+                    } else {
+                        debugPrint("----------------------------------")
+                        debugPrint("Cannot save record for \(key) in \(Self.ckRecordType)")
+                        dump(value)
+                        debugPrint("----------------------------------")
+                    }
+                }
+            }
+            
+            // se campo é [CKCloudable] Pega a referência
+            else if let value = field.value as? [CKMCloudable] {
+                var references:[CKRecord.Reference] = []
+                for item in value {
+                    if let reference = await item.saveAndGetReferenceForRecord() {
+                        references.append(reference)
+                    } else {
+                        debugPrint("Invalid Field in \(mirror).\(key) \n Data:")
+                        dump(item)
+                        throw CRUDError.invalidRecordID
+                    }
+                }
+                ckRecord.setValue(references, forKey: key)
+                
+            }
+            
+            else if let value = field.value as? any RawRepresentable {
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            else if let value = field.value as? [any RawRepresentable] {
+                ckRecord.setValue(value, forKey: key)
+            }
+            
+            else {
+                debugPrint("WARNING: Untratable type\n    \(key): \(type(of: field.value)) = \(field.value)")
+                continue
+            }
+        }
+        
+        return preparedRecord
+    }
     
 	public func prepareCKRecord()throws ->CKMPreparedRecord {
 		let ckRecord:CKRecord = {
@@ -671,21 +809,16 @@ extension CKMCloudable {
         }
     
     public func ckSave() async throws -> Self {
-            let ckPreparedRecord = try       self.prepareCKRecord()
-            let record           = try await CKMDefault.database.save(ckPreparedRecord.record)
-            let ckRecord         = try await ckPreparedRecord.dispatchPending(for: record)  // Resolver as pendências, se houver
+        let ckPreparedRecord = try await self.prepare()
+        let record = try await CKMDefault.database.save(ckPreparedRecord.record)
+        let ckRecord = try await ckPreparedRecord.dispatchPending(for: record)  // Resolver as pendências, se houver
         
-            let dictionary = await Self.addObservableUnderscoreAsynchronously(record: ckRecord)
+        let dictionary = await Self.addObservableUnderscoreAsynchronously(record: ckRecord)
         
-            let object           = try       Self.load(from: dictionary)
+        let object = try Self.load(from: dictionary)
         return object
     }
     
-    public func ckSave(nonRecursivelyWithPreparedCKRecord preparedCKRecord: CKRecord) async throws -> Self {
-        let record           = try await CKMDefault.database.save(preparedCKRecord)
-        let object           = try       Self.load(from: record.asDictionary)
-        return object
-    }
     
     
    
@@ -710,7 +843,8 @@ extension CKMCloudable {
             
             do {
                 CKMDefault.addToCache(record)
-                let result: Self = try Self.load(from: record)
+                let dictionary = await Self.addObservableUnderscoreAsynchronously(record: record)
+                let result:Self = try Self.load(from: dictionary)
                 return result
             } catch {
                 CKMDefault.removeFromCache(record.recordID.recordName)
